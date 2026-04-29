@@ -113,13 +113,27 @@ class GeminiLiveSession:
 
 async def _try_connect_one(api_key: str, model: str) -> GeminiLiveSession:
     url = f"{GEMINI_WS_URL}?key={api_key}"
-    ws = await websockets.connect(
-        url,
-        additional_headers={"Content-Type": "application/json"},
-        open_timeout=15,
-        ping_interval=20,
-        ping_timeout=10,
-    )
+    connect_kwargs = {
+        "open_timeout": 15,
+        "ping_interval": 20,
+        "ping_timeout": 10,
+    }
+    try:
+        # websockets>=13 prefers additional_headers.
+        ws = await websockets.connect(
+            url,
+            additional_headers={"Content-Type": "application/json"},
+            **connect_kwargs,
+        )
+    except TypeError as e:
+        # Some environments still expose the older extra_headers name.
+        if "unexpected keyword argument 'additional_headers'" not in str(e):
+            raise
+        ws = await websockets.connect(
+            url,
+            extra_headers={"Content-Type": "application/json"},
+            **connect_kwargs,
+        )
     setup = {
         "setup": {
             "model": model,

@@ -2,6 +2,7 @@
 Gemini Live API — direct WebSocket connection (no SDK).
 Bypasses all SDK/version issues entirely.
 """
+
 import asyncio
 import json
 import logging
@@ -34,11 +35,10 @@ SYSTEM_INSTRUCTION = (
     "Preserve leading zeros exactly as spoken (e.g. 0129 must stay 0129). "
     "Never output letter-name words for plate letters (e.g. do not output 'عين' or 'عن'; output single letter 'ع'). "
     "STRICT LANGUAGE LOCK: Only Arabic characters allowed. NEVER output English or Latin letters."
-    "FORCE START RULE: If the audio starts with a breathy sound (Haa/Heh), ALWAYS map it to 'ح'. NEVER start a plate with 'هـ'."
-    "MID-SPEECH RULE: Only output 'هـ' if it occurs clearly between other letters, never at the very beginning of the audio."
+    "Phonetic Letter-Name Collapse: If the speaker says a letter's full name (e.g., \"لام\", \"ألف\", \"عين\", \"دال\"), collapse it into its single corresponding character (ل, أ, ع, د). Strictly maintain the 3-letter limit by ignoring extra characters generated from phonetic spelling."
 )
 
-SYSTEM_PROMPT = """Output must be ONLY one of:
+USER_PROMPT = """Output must be ONLY one of:
 {"plate":"<letters> <digits>","moving":false}
 {"plates":[{"plate":"<letters> <digits>","moving":false}, ...]}
 {"plate":null,"moving":false}
@@ -56,6 +56,9 @@ Rules:
 10) If you hear a letter name, convert it to one Arabic character only (e.g. عين/عن -> ع, لام -> ل, صاد -> ص, ألف -> ا, دال -> د).
 11) Boolean "moving" is required on every object that has "plate" (false if parked / not said).
 12) Preserve leading zeros in digits exactly as spoken (e.g., '0123' must NOT become '123').
+13)Important: Treat full letter names as single letters to ensure exactly 3 letters total.
+Example: If the audio says "لام و ح" or "لام الف م", output "ل و ح" or "ل أ م".
+Example: If the audio says "عين س ن", output "ع س ن".
 
 Valid example: {"plate":"وصر 4923","moving":false}"""
 
@@ -152,7 +155,7 @@ async def _try_connect_one(api_key: str, model: str) -> GeminiLiveSession:
             "systemInstruction": {
                 "parts": [
                     {"text": SYSTEM_INSTRUCTION},
-                    {"text": SYSTEM_PROMPT},
+                    {"text": USER_PROMPT},
                 ]
             },
         }
@@ -195,8 +198,7 @@ async def create_gemini_session(
     except Exception as e:
         logger.warning("Live connect failed model=%s: %s", primary, e)
         raise RuntimeError(
-            f"Could not start Gemini Live session for model {primary!r}. "
-            f"Error: {e!r}"
+            f"Could not start Gemini Live session for model {primary!r}. Error: {e!r}"
         ) from e
 
     logger.info("Connected Live model=%s", primary)

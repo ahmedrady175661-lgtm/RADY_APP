@@ -107,20 +107,23 @@ def classify_ors_http(status_code: int, _body: Any) -> str:
 
 async def async_gemini_try_all(
     factory: Callable[[str], Awaitable[T]],
-) -> tuple[T | None, BaseException | None]:
+) -> tuple[T | None, str | None, BaseException | None]:
     """
     Try each Gemini key in rotation order until success or exhaustion.
     On quota: park key until midnight UTC. On invalid: delete key.
+
+    Returns (result, redis_key_id_on_success, error). On failure result and key_id are None
+    except mid-loop non-quota errors return (None, attempted_key_id, error).
     """
     r = _r()
     if not r:
-        return None, RuntimeError("no_redis")
+        return None, None, RuntimeError("no_redis")
 
     last_exc: BaseException | None = None
     for key_id, api_key in iter_round_robin(r, "gemini"):
         try:
             out = await factory(api_key)
-            return out, None
+            return out, key_id, None
         except Exception as e:
             last_exc = e
             bucket = classify_gemini_error(e)
@@ -135,10 +138,10 @@ async def async_gemini_try_all(
                 delete_key_forever(r, "gemini", key_id)
                 logger.warning("Gemini invalid API key removed id=%s", key_id[:8])
                 continue
-            return None, e
+            return None, key_id, e
     if last_exc is not None:
-        return None, last_exc
-    return None, RuntimeError("no_gemini_key")
+        return None, None, last_exc
+    return None, None, RuntimeError("no_gemini_key")
 
 
 def admin_list_pools() -> dict[str, Any]:
@@ -192,9 +195,7 @@ def snapshot_for_admin() -> dict[str, str]:
     }
 
 
-def set_all_keys(
-    gemini_api_key: str, ors_api_key: str, gmaps_api_key: str
-) -> None:
+def set_all_keys(gemini_api_key: str, ors_api_key: str, gmaps_api_key: str) -> None:
     """Deprecated: keys are managed via Redis pools only."""
     _ = (gemini_api_key, ors_api_key, gmaps_api_key)
     logger.warning("set_all_keys ignored — use admin key-pools API")

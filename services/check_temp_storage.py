@@ -2,15 +2,11 @@
 
 from __future__ import annotations
 
-import io
-import json
 import threading
 import uuid
 from contextlib import contextmanager
-from datetime import datetime
 from typing import Any
 
-import openpyxl
 import psycopg
 from psycopg.rows import dict_row
 
@@ -185,9 +181,7 @@ def _get_session_id(cur, user_id: int, session_token: str) -> int | None:
     return int(row[0]) if row else None
 
 
-def delete_temp_session_sync(
-    dsn: str, user_id: int, is_admin: bool, session_token: str
-) -> bool:
+def delete_temp_session_sync(dsn: str, user_id: int, is_admin: bool, session_token: str) -> bool:
     ensure_check_temp_schema(dsn)
     tok = (session_token or "").strip()
     if not tok:
@@ -251,7 +245,9 @@ def upload_large_temp_plates_sync(
 
     wb = load_workbook_maybe_encrypted(large_bytes, password)
     try:
-        ws = wb[large_sheet] if large_sheet and large_sheet in wb.sheetnames else find_best_sheet(wb)
+        ws = (
+            wb[large_sheet] if large_sheet and large_sheet in wb.sheetnames else find_best_sheet(wb)
+        )
         rows = ws.iter_rows(values_only=True)
         header = next(rows, None)
         if header is None:

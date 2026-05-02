@@ -9,8 +9,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-from typing import Awaitable, Callable
-from typing import Any
+from typing import Any, Awaitable, Callable
 
 from config import settings
 

@@ -10,6 +10,7 @@ __pycache__/
 venv/
 env/
 ENV/
+.audit_venv/
 
 # ── Environment Variables ────────────────────────────────
 .env
@@ -24,6 +25,9 @@ app.db
 *.db
 *.sqlite
 *.sqlite3
+
+# ── Redis local snapshot (do not commit) ─────────────────
+dump.rdb
 
 # ── Logs ─────────────────────────────────────────────────
 *.log

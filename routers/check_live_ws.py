@@ -6,6 +6,7 @@ from sqlalchemy.orm import sessionmaker
 from core.plate_checker_ws import handle_plate_checker_client
 from db import engine
 from models import User
+from services.subscription import deactivate_expired_subscription
 from services.ws_check_live_ticket import consume_ticket
 
 logger = logging.getLogger(__name__)
@@ -26,14 +27,22 @@ async def check_live_websocket(websocket: WebSocket) -> None:
     if user_id is None:
         await websocket.close(code=4401, reason="invalid or used ticket")
         return
+    u: User | None = None
+    is_admin_ws = False
+    is_active_ws = False
     with SessionLocal() as db:
-        user = db.get(User, user_id)
-    if user is None or not user.is_active:
+        u = db.get(User, user_id)
+        if u is not None:
+            deactivate_expired_subscription(db, u)
+            db.refresh(u)
+            is_admin_ws = bool(u.is_admin)
+            is_active_ws = bool(u.is_active)
+    if u is None or not is_active_ws:
         await websocket.close(code=4401, reason="invalid ticket")
         return
     try:
-        await handle_plate_checker_client(websocket, user.id, bool(user.is_admin))
+        await handle_plate_checker_client(websocket, int(user_id), is_admin_ws)
     except WebSocketDisconnect:
-        logger.debug("Live check WS disconnect user_id=%s", user.id)
+        logger.debug("Live check WS disconnect user_id=%s", user_id)
     except Exception:
-        logger.exception("Live check WS error user_id=%s", user.id)
+        logger.exception("Live check WS error user_id=%s", user_id)

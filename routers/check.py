@@ -4,21 +4,21 @@ import io
 import json
 import logging
 import os
+import re
 import tempfile
 import time
-import re
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
-from fastapi.responses import FileResponse, JSONResponse
 import openpyxl
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
+from config import settings
 from db import get_db
 from dependencies.auth import get_current_user
 from models import UserGroup
 from models.user import User
-from config import settings
 from services.check_match import run_check_plates_sync
 from services.check_postgres import (
     CHECK_PG_MAX_LARGE_BYTES,
@@ -30,6 +30,11 @@ from services.check_postgres import (
     list_imports_sync,
     run_check_plates_postgres_sync,
 )
+from services.check_queue import (
+    CheckQueueFullError,
+    enqueue_check_job,
+    queue_depth,
+)
 from services.check_temp_storage import (
     CHECK_TEMP_MAX_LARGE_BYTES,
     CHECK_TEMP_TTL_MINUTES,
@@ -39,11 +44,6 @@ from services.check_temp_storage import (
     query_temp_plates_sync,
     start_temp_session_sync,
     upload_large_temp_plates_sync,
-)
-from services.check_queue import (
-    CheckQueueFullError,
-    enqueue_check_job,
-    queue_depth,
 )
 from services.excel_utils import (
     find_best_sheet_async,
@@ -64,7 +64,6 @@ from services.plate_utils import (
     auto_detect_plate_col_from_rows,
 )
 from services.upload_security import MAX_EXCEL_BYTES, read_upload_with_limit
-
 
 logger = logging.getLogger(__name__)
 _JOB_ID_RE = re.compile(
@@ -450,9 +449,7 @@ async def check_stored_large_meta(
                 "in_group": ig,
             }
         )
-    return JSONResponse(
-        {"has_data": True, **meta, "group_name": gn, "in_group": ig}
-    )
+    return JSONResponse({"has_data": True, **meta, "group_name": gn, "in_group": ig})
 
 
 @router.get("/check/stored-imports")
@@ -640,7 +637,9 @@ def _normalize_small_plates_text(raw: str) -> list[str]:
 def _plates_text_to_small_xlsx_bytes(raw: str) -> tuple[bytes, str, int]:
     plates = _normalize_small_plates_text(raw)
     if not plates:
-        raise HTTPException(status_code=400, detail="يرجى إدخال لوحة واحدة على الأقل في خانة اللوحات النصية.")
+        raise HTTPException(
+            status_code=400, detail="يرجى إدخال لوحة واحدة على الأقل في خانة اللوحات النصية."
+        )
     wb = openpyxl.Workbook()
     ws = wb.active
     assert ws is not None
@@ -958,7 +957,9 @@ async def check_plates(
                 os.unlink(p)
             except OSError:
                 pass
-        raise HTTPException(status_code=429, detail="Check queue is busy. Please try again shortly.")
+        raise HTTPException(
+            status_code=429, detail="Check queue is busy. Please try again shortly."
+        )
     return JSONResponse({"job_id": job_id, "status": "processing"})
 
 

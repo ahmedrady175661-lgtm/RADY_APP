@@ -23,7 +23,6 @@ from typing import Iterable
 
 import httpx
 
-
 BASE_URL = os.environ.get("LOAD_BASE_URL", "http://127.0.0.1:8000").rstrip("/")
 ENV_PATH = Path(__file__).resolve().parents[1] / ".env"
 
@@ -123,14 +122,10 @@ async def _worker_health(client: httpx.AsyncClient, end_at: float) -> list[Sampl
         try:
             r = await client.get("/health")
             dt = (time.perf_counter() - t0) * 1000.0
-            out.append(
-                Sample(status=r.status_code, latency_ms=dt, ok=(r.status_code == 200))
-            )
+            out.append(Sample(status=r.status_code, latency_ms=dt, ok=(r.status_code == 200)))
         except Exception as e:
             dt = (time.perf_counter() - t0) * 1000.0
-            out.append(
-                Sample(status=0, latency_ms=dt, ok=False, error_type=type(e).__name__)
-            )
+            out.append(Sample(status=0, latency_ms=dt, ok=False, error_type=type(e).__name__))
         await asyncio.sleep(0)
     return out
 
@@ -146,14 +141,10 @@ async def _worker_auth_mix(
         try:
             r = await client.get(path, cookies=cookies)
             dt = (time.perf_counter() - t0) * 1000.0
-            out.append(
-                Sample(status=r.status_code, latency_ms=dt, ok=(r.status_code == 200))
-            )
+            out.append(Sample(status=r.status_code, latency_ms=dt, ok=(r.status_code == 200)))
         except Exception as e:
             dt = (time.perf_counter() - t0) * 1000.0
-            out.append(
-                Sample(status=0, latency_ms=dt, ok=False, error_type=type(e).__name__)
-            )
+            out.append(Sample(status=0, latency_ms=dt, ok=False, error_type=type(e).__name__))
         await asyncio.sleep(0)
     return out
 
@@ -164,9 +155,7 @@ async def run_stage_health(concurrency: int, seconds: int) -> dict:
         max_connections=max(200, concurrency * 4),
         max_keepalive_connections=max(100, concurrency * 2),
     )
-    async with httpx.AsyncClient(
-        base_url=BASE_URL, timeout=timeout, limits=limits
-    ) as client:
+    async with httpx.AsyncClient(base_url=BASE_URL, timeout=timeout, limits=limits) as client:
         end_at = time.perf_counter() + seconds
         tasks = [asyncio.create_task(_worker_health(client, end_at)) for _ in range(concurrency)]
         res = await asyncio.gather(*tasks)
@@ -200,9 +189,7 @@ async def run_stage_auth(concurrency: int, seconds: int, cookies: dict[str, str]
         max_connections=max(200, concurrency * 4),
         max_keepalive_connections=max(100, concurrency * 2),
     )
-    async with httpx.AsyncClient(
-        base_url=BASE_URL, timeout=timeout, limits=limits
-    ) as client:
+    async with httpx.AsyncClient(base_url=BASE_URL, timeout=timeout, limits=limits) as client:
         end_at = time.perf_counter() + seconds
         tasks = [
             asyncio.create_task(_worker_auth_mix(client, end_at, cookies))

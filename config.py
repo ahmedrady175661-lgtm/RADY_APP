@@ -1,7 +1,7 @@
 import os
+from urllib.parse import quote_plus
 
 from pydantic_settings import BaseSettings
-from urllib.parse import quote_plus
 
 
 class Settings(BaseSettings):

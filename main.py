@@ -8,34 +8,34 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
+from slowapi.errors import RateLimitExceeded
 from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.orm import Session
 
 from config import settings
 from db import Base, apply_postgres_auth_migrations, apply_sqlite_migrations, engine
 from models import User, UserGroup  # noqa: F401 — register UserGroup for create_all
-from routers.audio import router as audio_router
-from routers.excel import router as excel_router
-from routers.check import router as check_router
-from routers.check_live_ws import router as check_live_ws_router
-from routers.check_live_ticket import router as check_live_ticket_router
-from routers.check_live_upload import router as check_live_upload_router
-from routers.gps import router as gps_router
+from models.gemini_usage import GeminiModelPricing, GeminiUsageEvent  # noqa: F401 — create_all
 from routers.admin import router as admin_router
 from routers.admin_check_storage import router as admin_check_storage_router
 from routers.admin_provider import router as admin_provider_router
-from routers.public_config import router as public_config_router
-from routers.proxy_ors import router as proxy_ors_router
+from routers.audio import router as audio_router
 from routers.auth import router as auth_router
+from routers.check import process_check_queue_item
+from routers.check import router as check_router
+from routers.check_live_ticket import router as check_live_ticket_router
+from routers.check_live_upload import router as check_live_upload_router
+from routers.check_live_ws import router as check_live_ws_router
+from routers.excel import router as excel_router
+from routers.gps import router as gps_router
+from routers.proxy_ors import router as proxy_ors_router
+from routers.public_config import router as public_config_router
 from services import gemini
 from services import job_store as job_store_svc
-from services.check_queue import start_check_queue, stop_check_queue
-from routers.check import process_check_queue_item
 from services.check_postgres import ensure_check_pg_schema
+from services.check_queue import start_check_queue, stop_check_queue
 from services.rate_limit import limiter, rate_limit_exceeded_handler
 from services.security import hash_password
-from slowapi.errors import RateLimitExceeded
-
 
 logger = logging.getLogger(__name__)
 
@@ -64,8 +64,7 @@ def _validate_sensitive_settings() -> None:
     if invalid_vars:
         details = ", ".join(invalid_vars)
         raise RuntimeError(
-            "Security startup check failed. Update these .env variables before running: "
-            f"{details}"
+            f"Security startup check failed. Update these .env variables before running: {details}"
         )
 
 

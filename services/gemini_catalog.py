@@ -58,7 +58,4 @@ def list_public_gemini_models_sync(channel: str) -> list[dict]:
             .order_by(GeminiModelCatalog.sort_order.asc(), GeminiModelCatalog.id.asc())
             .all()
         )
-        return [
-            {"id": r.id, "model_id": r.model_id, "label": r.label or r.model_id}
-            for r in rows
-        ]
+        return [{"id": r.id, "model_id": r.model_id, "label": r.label or r.model_id} for r in rows]

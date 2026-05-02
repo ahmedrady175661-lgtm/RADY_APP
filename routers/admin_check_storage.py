@@ -14,8 +14,8 @@ from models.user import User
 from services.check_postgres import (
     admin_get_import_meta_sync,
     admin_list_check_storage_sync,
-    admin_list_imports_detailed_sync,
     admin_list_import_rows_page_sync,
+    admin_list_imports_detailed_sync,
     admin_write_import_csv_tempfile_sync,
 )
 
@@ -38,9 +38,7 @@ def _check_pg_url() -> str:
 async def check_storage_summary(_admin: User = Depends(require_admin)):
     url = _check_pg_url()
     try:
-        rows = await asyncio.to_thread(
-            admin_list_check_storage_sync, url, _admin.id, True
-        )
+        rows = await asyncio.to_thread(admin_list_check_storage_sync, url, _admin.id, True)
     except Exception:
         logger.exception("admin_list_check_storage_sync failed")
         raise HTTPException(
@@ -54,9 +52,7 @@ async def check_storage_summary(_admin: User = Depends(require_admin)):
 async def check_storage_imports(_admin: User = Depends(require_admin)):
     url = _check_pg_url()
     try:
-        items = await asyncio.to_thread(
-            admin_list_imports_detailed_sync, url, _admin.id, True
-        )
+        items = await asyncio.to_thread(admin_list_imports_detailed_sync, url, _admin.id, True)
     except Exception:
         logger.exception("admin_list_imports_detailed_sync failed")
         raise HTTPException(
@@ -93,9 +89,7 @@ async def check_storage_import_rows(
             detail="Failed to read import rows.",
         )
     if total == 0:
-        meta = await asyncio.to_thread(
-            admin_get_import_meta_sync, url, _admin.id, True, import_id
-        )
+        meta = await asyncio.to_thread(admin_get_import_meta_sync, url, _admin.id, True, import_id)
         if meta is None:
             raise HTTPException(status_code=404, detail="Import not found.")
     return JSONResponse({"import_id": import_id, "total": total, "offset": offset, "rows": rows})

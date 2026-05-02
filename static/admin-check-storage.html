@@ -28,13 +28,10 @@
 </head>
 <body>
   <h1>استيراد الفرز (Postgres) — إدارة</h1>
-  <p style="font-size:.8rem;color:#94a3b8;margin:0 0 .75rem">يتطلب تسجيل دخول كـ Admin. من نفس الموقع بعد الدخول في التطبيق تُرسل الكوكيز المؤمنة تلقائياً. أو الصق <code>access_token</code> يدوياً للاختبار.</p>
+  <p style="font-size:.8rem;color:#94a3b8;margin:0 0 .75rem">يتطلب تسجيل دخول كـ Admin. افتح الصفحة من نفس الموقع بعد الدخول في التطبيق لتُرسل الكوكيز تلقائياً مع كل طلب.</p>
   <div class="toolbar">
     <button type="button" id="loadBtn">تحديث الملخص</button>
     <button type="button" id="loadImportsBtn" class="secondary">تحديث قائمة الاستيرادات</button>
-    <label style="font-size:.78rem;color:#94a3b8">Bearer يدوي (اختياري):
-      <input id="tokIn" type="password" placeholder="JWT access (اختياري)" style="width:min(380px,88vw);padding:.35rem .5rem;border-radius:4px;border:1px solid #475569;background:#1e293b;color:#e2e8f0"/>
-    </label>
   </div>
   <div id="msg"></div>
 
@@ -79,19 +76,10 @@
 
   <p style="margin-top:1.2rem;font-size:.75rem;color:#64748b"><a href="/">← الرئيسية</a></p>
   <script>
-  function manualToken(){
-    return document.getElementById('tokIn').value.trim();
-  }
-  function authHeaders(){
-    var t=manualToken();
-    if(!t) return {};
-    return {'Authorization':'Bearer '+t};
-  }
   function credFetch(url, opts){
     opts=opts||{};
     opts.credentials='include';
-    var base=authHeaders();
-    opts.headers=Object.assign({}, base, opts.headers||{});
+    opts.headers=Object.assign({}, opts.headers||{});
     return fetch(url, opts);
   }
 
@@ -106,7 +94,7 @@
     try{
       var r=await credFetch('/api/admin/check-storage/summary');
       var j=await r.json().catch(function(){return{};});
-      if(!r.ok) throw new Error(r.status===401?'غير مصرّح — سجّل دخول Admin من الرئيسية أو الصق token.':(j.detail||r.statusText||'فشل'));
+      if(!r.ok) throw new Error(r.status===401?'غير مصرّح — سجّل دخول Admin من الرئيسية ثم أعد فتح هذه الصفحة.':(j.detail||r.statusText||'فشل'));
       var items=(j.items)||[];
       if(!items.length){
         msg.className='ok';

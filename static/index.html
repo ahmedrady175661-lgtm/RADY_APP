@@ -38,13 +38,6 @@ header p{font-size:.74rem;color:var(--dim2);font-family:var(--mono);margin-top:.
 .vtag{font-family:var(--mono);font-size:.67rem;color:var(--sky);background:var(--skyg);border:1px solid rgba(14,165,233,.25);padding:.2rem .65rem;border-radius:4px}
 .icon-btn{width:36px;height:36px;border-radius:8px;background:var(--s2);border:1px solid var(--brd2);cursor:pointer;display:grid;place-items:center;font-size:1rem;color:var(--dim2);transition:all .2s}
 .icon-btn:hover{border-color:var(--sky);color:var(--sky)}
-/* ── Global bar ── */
-.global-bar{background:var(--s1);border:1px solid rgba(14,165,233,.28);border-radius:var(--r);padding:1rem 1.2rem;margin-bottom:1rem;box-shadow:var(--card-shadow);display:grid;grid-template-columns:1fr 1px 1fr;gap:.9rem;align-items:end}
-@media(max-width:620px){.global-bar{grid-template-columns:1fr}}
-.gb-div{background:var(--brd);align-self:stretch;margin:0 .3rem}
-@media(max-width:620px){.gb-div{display:none}}
-.api-row{display:flex;gap:.4rem;align-items:flex-end}
-.api-row input{flex:1}
 .eye-btn{width:38px;height:38px;border-radius:7px;background:var(--s2);border:1px solid var(--brd2);cursor:pointer;color:var(--dim2);display:grid;place-items:center;font-size:.9rem;transition:all .2s;flex-shrink:0}
 .eye-btn:hover{border-color:var(--sky);color:var(--sky)}
 /* ── Nav ── */
@@ -122,8 +115,6 @@ input[type=file]{display:none}
 .rec-bar{height:100%;background:linear-gradient(90deg,var(--sky),var(--cyan));transition:width .9s linear;width:0%}
 .rec-bar.warn{background:linear-gradient(90deg,var(--amber),var(--red))}
 .rec-lbl{font-size:.78rem;color:var(--dim2);font-family:var(--mono);text-align:center;min-height:1.2em}
-.converting-lbl{font-size:.78rem;color:var(--amber);font-family:var(--mono);text-align:center;display:none;align-items:center;gap:.4rem;justify-content:center}
-.converting-lbl.show{display:flex}
 .mode-chips{display:flex;gap:.6rem;margin-bottom:.85rem}
 .mchip{flex:1;padding:.5rem .7rem;background:var(--s2);border:1px solid var(--brd2);border-radius:8px;cursor:pointer;text-align:center;font-size:.8rem;color:var(--dim2);transition:all .2s;font-weight:600}
 .mchip.sel{background:var(--skyg);border-color:rgba(14,165,233,.4);color:var(--sky)}
@@ -228,19 +219,16 @@ tbody td{padding:.6rem .85rem;vertical-align:middle;font-size:.83rem}
 .spin{width:15px;height:15px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
 @keyframes spin{to{transform:rotate(360deg)}}
 /* ── Check / التشيك (Gemini Live) ── */
-.check-hero{text-align:center;padding:1.5rem 1rem 1rem;margin-bottom:.5rem}
-.check-hero h2{font-size:1.4rem;font-weight:800;background:linear-gradient(90deg,var(--violet),#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:.35rem}
-.check-hero p{font-size:.82rem;color:var(--dim2);max-width:480px;margin:0 auto;line-height:1.7}
 .file-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem}
 @media(max-width:620px){.file-grid{grid-template-columns:1fr}}
 .file-card{background:var(--s1);border:1px solid var(--brd);border-radius:var(--r);padding:1.2rem;box-shadow:var(--card-shadow)}
 .file-card.sky-card{border-color:rgba(14,165,233,.25)}
 .file-card.violet-card{border-color:rgba(139,92,246,.25)}
-.fc-label{font-size:.65rem;font-family:var(--mono);font-weight:600;text-transform:uppercase;letter-spacing:.12em;margin-bottom:.85rem;display:flex;align-items:center;gap:.45rem}
-.fc-label.sky{color:var(--sky)}.fc-label.violet{color:var(--violet)}
-.fc-badge{font-size:.58rem;padding:.12rem .5rem;border-radius:10px;font-weight:600}
-.fc-badge.large-badge{background:rgba(14,165,233,.12);border:1px solid rgba(14,165,233,.25);color:var(--sky)}
-.fc-badge.small-badge{background:var(--violetg);border:1px solid rgba(139,92,246,.25);color:var(--violet)}
+.upload-card-label{font-size:.65rem;font-family:var(--mono);font-weight:600;text-transform:uppercase;letter-spacing:.12em;margin-bottom:.85rem;display:flex;align-items:center;gap:.45rem}
+.upload-card-label.sky{color:var(--sky)}.upload-card-label.violet{color:var(--violet)}
+.upload-card-badge{font-size:.58rem;padding:.12rem .5rem;border-radius:10px;font-weight:600}
+.upload-card-badge.large-badge{background:rgba(14,165,233,.12);border:1px solid rgba(14,165,233,.25);color:var(--sky)}
+.upload-card-badge.small-badge{background:var(--violetg);border:1px solid rgba(139,92,246,.25);color:var(--violet)}
 .col-detect-row{display:flex;gap:.5rem;align-items:flex-end;margin-top:.75rem}
 .col-detect-row input{flex:1}
 .detect-badge{font-family:var(--mono);font-size:.65rem;padding:.25rem .6rem;border-radius:5px;white-space:nowrap;flex-shrink:0}
@@ -266,27 +254,8 @@ tbody td{padding:.6rem .85rem;vertical-align:middle;font-size:.83rem}
 .dl-btn{width:100%;padding:.8rem;background:linear-gradient(135deg,var(--green),#16a34a);border:none;border-radius:9px;color:#fff;font-family:var(--ar);font-size:.9rem;font-weight:800;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:.5rem;box-shadow:0 3px 14px rgba(34,197,94,.3)}
 .dl-btn:hover{opacity:.9;transform:translateY(-1px)}
 .dl-btn.teal-dl{background:linear-gradient(135deg,var(--teal),#0d9488);box-shadow:0 3px 14px rgba(20,184,166,.3)}
-/* ── Field check ── */
-.field-hero{text-align:center;padding:1.2rem 1rem .6rem;margin-bottom:.5rem}
-.field-hero h2{font-size:1.4rem;font-weight:800;background:linear-gradient(90deg,var(--teal),#5eead4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:.35rem}
-.field-hero p{font-size:.82rem;color:var(--dim2);max-width:500px;margin:0 auto;line-height:1.7}
-.fc-process-btn{width:100%;padding:.85rem;background:linear-gradient(135deg,#0ea5e9,#06b6d4);border:none;border-radius:10px;color:#fff;font-family:var(--ar);font-size:.95rem;font-weight:800;cursor:pointer;transition:all .22s;display:flex;align-items:center;justify-content:center;gap:.55rem;box-shadow:0 4px 18px var(--skyglow);margin-bottom:1rem}
-.fc-process-btn:hover:not(:disabled){opacity:.9;transform:translateY(-1px)}
-.fc-process-btn:disabled{opacity:.28;cursor:not-allowed}
-.fc-check-btn{width:100%;padding:.9rem;background:linear-gradient(135deg,var(--teal),#0d9488);border:none;border-radius:10px;color:#fff;font-family:var(--ar);font-size:1rem;font-weight:800;cursor:pointer;transition:all .22s;display:flex;align-items:center;justify-content:center;gap:.55rem;box-shadow:0 4px 18px rgba(20,184,166,.4);margin-bottom:1rem}
-.fc-check-btn:hover:not(:disabled){opacity:.9;transform:translateY(-2px)}
-.fc-check-btn:disabled{opacity:.28;cursor:not-allowed}
-.fc-plate-check{margin-top:.85rem;padding:.85rem;border:1px solid var(--brd);border-radius:10px;background:var(--s2)}
-.fc-plate-check-row{display:grid;grid-template-columns:1fr auto;gap:.6rem;align-items:end}
-@media(max-width:520px){.fc-plate-check-row{grid-template-columns:1fr}}
-.fc-plate-check-input{border:1px solid var(--brd2);border-radius:8px;padding:.72rem .75rem;background:var(--s1);color:var(--txt);font-family:var(--mono);transition:border-color .2s,box-shadow .2s}
-.fc-plate-check-input.state-ok{border-color:rgba(34,197,94,.7);box-shadow:0 0 0 2px rgba(34,197,94,.15)}
-.fc-plate-check-input.state-bad{border-color:rgba(239,68,68,.7);box-shadow:0 0 0 2px rgba(239,68,68,.14)}
-.fc-plate-check-btn{padding:.72rem .9rem;border:0;border-radius:8px;cursor:pointer;color:#fff;font-family:var(--ar);font-weight:800;background:linear-gradient(135deg,var(--teal),#0d9488)}
-.fc-plate-check-state{margin-top:.55rem;font-size:.78rem;padding:.45rem .6rem;border-radius:8px;border:1px solid var(--brd2);color:var(--dim2);background:var(--s1)}
-.fc-plate-check-state.ok{color:var(--green);border-color:rgba(34,197,94,.35);background:rgba(34,197,94,.1)}
-.fc-plate-check-state.bad{color:var(--red);border-color:rgba(239,68,68,.35);background:rgba(239,68,68,.1)}
-.fc-plate-check-state.proc{color:var(--teal);border-color:rgba(20,184,166,.35);background:rgba(20,184,166,.1)}
+/* ── Inputs (جدول جلسة التشيك) ── */
+.check-session-input{border:1px solid var(--brd2);border-radius:8px;padding:.72rem .75rem;background:var(--s1);color:var(--text);font-family:var(--mono);transition:border-color .2s,box-shadow .2s}
 .maps-link{display:inline-flex;align-items:center;gap:.3rem;font-family:var(--mono);font-size:.69rem;color:var(--teal);text-decoration:none;padding:.15rem .45rem;border-radius:5px;border:1px solid rgba(20,184,166,.3);transition:all .18s}
 .maps-link:hover{background:rgba(20,184,166,.12);border-color:var(--teal)}
 .check-actions{display:grid;grid-template-columns:1fr;gap:.85rem;margin:1rem 0}
@@ -313,7 +282,7 @@ body.light #omMatchTableWrap td.om-plate-dup{background:rgba(253,224,71,.55)!imp
 .om-xls-grid td.om-plate-dup{background:rgba(250,204,21,.42)!important;box-shadow:inset 0 0 0 1px rgba(217,119,6,.4)}
 body.light .om-xls-grid td.om-plate-dup{background:rgba(253,224,71,.55)!important;box-shadow:inset 0 0 0 1px rgba(202,138,4,.35)}
 .om-xls-grid td.om-xls-small.om-xls-plate,.om-xls-grid th.om-xls-small.om-xls-plate{color:#14532d!important;font-weight:800!important}
-/* Tafrigh data table: same Excel-like shell as الفرز preview; fixed scroll height */
+/* جدول صفحة التسجيل: نفس شكل معاينة الفرز */
 .tafrigh-xls-scroll{height:min(52vh,460px);max-height:460px;min-height:240px;overflow:auto;background:#fcfcfc;direction:rtl;border-top:1px solid #c5c5c5}
 .tafrigh-xls-scroll .om-xls-grid thead th{text-transform:none;letter-spacing:.02em;font-family:var(--ar),Segoe UI,sans-serif}
 .tafrigh-xls-scroll .td-plate{color:#14532d;font-weight:800}
@@ -324,9 +293,6 @@ body.light .om-xls-grid td.om-plate-dup{background:rgba(253,224,71,.55)!importan
 .tafrigh-xls-scroll .del-row{color:#555}
 .tafrigh-xls-scroll .del-row:hover{color:#b91c1c}
 .tafrigh-xls-scroll tbody tr:hover td{background:#edf3fa!important}
-.check-run-btn{width:100%;padding:.95rem;background:linear-gradient(135deg,var(--violet),#6d28d9,#5b21b6);border:none;border-radius:10px;color:#fff;font-family:var(--ar);font-size:1rem;font-weight:800;cursor:pointer;transition:all .22s;display:flex;align-items:center;justify-content:center;gap:.55rem;box-shadow:0 4px 20px rgba(139,92,246,.4)}
-.check-run-btn:hover:not(:disabled){opacity:.9;transform:translateY(-2px)}
-.check-run-btn:disabled{opacity:.28;cursor:not-allowed}
 .gps-run-btn{width:100%;padding:.95rem;background:linear-gradient(135deg,var(--teal),#0d9488,#0f766e);border:none;border-radius:10px;color:#fff;font-family:var(--ar);font-size:1rem;font-weight:800;cursor:pointer;transition:all .22s;display:flex;align-items:center;justify-content:center;gap:.55rem;box-shadow:0 4px 20px rgba(20,184,166,.4)}
 .gps-run-btn:hover:not(:disabled){opacity:.9;transform:translateY(-2px)}
 .gps-run-btn:disabled{opacity:.28;cursor:not-allowed}
@@ -338,18 +304,15 @@ body.light .om-xls-grid td.om-plate-dup{background:rgba(253,224,71,.55)!importan
 /* ── Live check (Gemini Live) ── */
 .live-plate-item{padding:.55rem .85rem;border-radius:8px;margin-bottom:.4rem;font-family:var(--mono);font-size:.84rem;font-weight:600;width:100%}
 .live-plate-item.hit{background:rgba(34,197,94,.2);border:2px solid rgba(34,197,94,.65);color:var(--green);font-size:1.42rem;font-weight:900;letter-spacing:.02em;padding:.88rem 1.05rem;box-shadow:0 0 0 2px rgba(34,197,94,.12),0 8px 22px rgba(34,197,94,.22);animation:checkHitPulse .7s ease-out 1}
-.live-plate-item.miss{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.35);color:var(--red)}
 .live-plate-item.unk{background:var(--s2);border:1px solid var(--brd2);color:var(--dim2)}
 .check-live-plate-wrap{margin-top:.85rem;width:100%}
 .check-live-plate-head{display:flex;align-items:center;justify-content:space-between;gap:.5rem;margin-bottom:.55rem;flex-wrap:wrap}
 .check-live-plate-head .ptitle-inline{font-size:.78rem;font-weight:800;color:var(--text);font-family:var(--ar)}
-.check-live-plate-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:.65rem;direction:rtl;align-items:start;width:100%}
+.check-live-plate-grid{display:grid;grid-template-columns:1fr;gap:.65rem;direction:rtl;align-items:start;width:100%}
 .check-live-col{display:flex;flex-direction:column;min-width:0;width:100%}
 .check-live-col-h{font-size:.7rem;font-weight:800;margin-bottom:.4rem;padding:.38rem .5rem;border-radius:6px;text-align:center;font-family:var(--ar);line-height:1.35}
 .check-live-col-h.hit{background:rgba(34,197,94,.18);color:var(--green);border:1px solid rgba(34,197,94,.35)}
-.check-live-col-h.miss{background:rgba(239,68,68,.12);color:var(--red);border:1px solid rgba(239,68,68,.35)}
-.check-live-plate-scroll{min-height:3rem;max-height:36vh;overflow-y:auto;border:1px solid var(--brd2);border-radius:8px;padding:.45rem;background:var(--s1);width:100%}
-@media(max-width:520px){.check-live-plate-grid{grid-template-columns:1fr}}
+.check-live-plate-scroll{min-height:3rem;max-height:42vh;overflow-y:auto;border:1px solid var(--brd2);border-radius:8px;padding:.45rem;background:var(--s1);width:100%}
 @keyframes checkHitPulse{
   0%{transform:scale(1);box-shadow:0 0 0 0 rgba(34,197,94,.55)}
   35%{transform:scale(1.045);box-shadow:0 0 0 12px rgba(34,197,94,.12)}
@@ -404,6 +367,7 @@ body.light .om-xls-grid td.om-plate-dup{background:rgba(253,224,71,.55)!importan
   <div class="modal" style="max-width:500px">
     <button class="modal-close" onclick="closeSettings()">&#x2715;</button>
     <h2>&#x2699;&#xFE0F; الإعدادات</h2>
+    <div id="settingsSubscriptionInfo" style="display:none;margin-bottom:.85rem;padding:.75rem .95rem;background:linear-gradient(135deg,var(--s2),var(--panel2));border:1px solid var(--brd2);border-radius:12px;font-size:.8rem;line-height:1.55;color:var(--text);box-shadow:0 1px 0 rgba(0,0,0,.04)"></div>
     <div class="settings-logout-wrap">
       <p style="font-size:.76rem;color:var(--dim2);margin-bottom:.6rem">تسجيل الخروج يمسح جلسة الدخول ويعيدك لشاشة تسجيل الدخول (لا يُغلق خادم التطبيق على الجهاز).</p>
       <button type="button" class="settings-logout-btn" onclick="authFullLogout()">&#x1F6AA; تسجيل خروج كامل</button>
@@ -424,13 +388,8 @@ body.light .om-xls-grid td.om-plate-dup{background:rgba(253,224,71,.55)!importan
         <li>ارفع الملف الكبير والملف الصغير (Excel)، ويُكتشف عمود اللوحة تلقائياً لكليهما.</li>
         <li>اضغط Match لتصدير ملف التطابق؛ إن وُجد عمود GPS في الملف الكبير يمكن ترتيب أقرب المركبات بعد المطابقة (مفتاح ORS من الخادم).</li>
       </ul>
-      <p><strong>3. التشيك (Gemini Live):</strong> ارفع ملف Excel مرجعي واحد، يُكتشف عمود اللوحة تلقائياً، ثم استمع مباشرة أو أدخل لوحة يدوياً. المفتاح والموديل من الخادم.</p>
-      <div style="margin:.55rem 0 0;padding:.65rem .85rem;background:var(--s2);border:1px solid var(--brd2);border-radius:8px;font-size:.82rem;line-height:1.65;color:var(--dim2)">
-        <strong style="color:var(--text)">لو اتقطع الاتصال فوراً أو ظهر 403 في السيرفر:</strong>
-        المتصفح يطلب تذكرة لمرة واحدة من <span style="font-family:var(--mono)">POST /api/check-live/ws-ticket</span> ثم يتصل بـ <span style="font-family:var(--mono)">/ws/check-live?ticket=…</span> على نفس المضيف (مثلاً <span style="font-family:var(--mono)">wss://example.com/ws/check-live?ticket=…</span>). مسار مثل <span style="font-family:var(--mono)">/ws//127.0.0.1:8000/…</span> خطأ ويُرفض قبل التوثيق.
-        <br/><br/>
-        <strong style="color:var(--text)">لو السيرفر يقفل بـ 1008 من Google بعد الفتح:</strong> ذلك من طرف Google (موديل أو إصدار API). الخادم يستخدم Live على <span style="font-family:var(--mono)">v1beta</span> مع موديل صوتي مدعوم و<code style="font-size:.78rem">outputAudioTranscription</code>؛ تأكد أن المفتاح يدعم نفس الموديل الظاهر في الإعدادات.
-      </div>
+      <p><strong>3. التشيك (Gemini Live):</strong> ارفع ملف Excel مرجعي واحد، يُكتشف عمود اللوحة تلقائياً، ثم استمع مباشرة. المفتاح والموديل من الخادم.</p>
+      <p style="margin:.55rem 0 0;padding:.65rem .85rem;background:var(--s2);border:1px solid var(--brd2);border-radius:8px;font-size:.82rem;line-height:1.65;color:var(--dim2)"><strong style="color:var(--text)">لمطوّر عميل جديد (مثل Flutter):</strong> حافظ على نفس ترتيب الشاشات والحقول؛ تفاصيل المسارات والجلسات وWebSocket موجودة في كود الخادم (FastAPI) وليست مطلوبة لنسخ واجهة المستخدم حرفياً في المتصفح.</p>
       <p><strong>الحذف من القائمة:</strong> يتطلب ضغطتين — الأولى تأكيد، الثانية تنفيذ.</p>
     </div>
   </div>
@@ -522,14 +481,6 @@ body.light .om-xls-grid td.om-plate-dup{background:rgba(253,224,71,.55)!importan
       <label class="lbl">الفترة بين النقاط (ثانية)</label>
       <input type="number" id="gpsInt" value="5" min="1" max="120" style="width:110px"/>
     </div>
-    <div class="ginfo">
-      <div class="gc"><label>خط العرض</label><div class="v" id="gLat">&#x2014;</div></div>
-      <div class="gc"><label>خط الطول</label><div class="v" id="gLng">&#x2014;</div></div>
-      <div class="gc"><label>الدقة (m)</label><div class="v" id="gAcc">&#x2014;</div></div>
-      <div class="gc"><label>نقاط</label><div class="v" id="gCnt">0</div></div>
-    </div>
-    <div class="gstatus"><div class="dot" id="gDot"></div><span id="gTxt">في انتظار التسجيل</span></div>
-    <div class="glog" id="gLog"><span>سيبدأ تسجيل الإحداثيات مع بدء التسجيل …</span></div>
   </div>
 </div>
 <div class="panel">
@@ -578,7 +529,7 @@ body.light .om-xls-grid td.om-plate-dup{background:rgba(253,224,71,.55)!importan
   </div>
   <div class="file-grid">
     <div class="file-card sky-card">
-      <div class="fc-label sky">&#x1F4C2; الملف الكبير <span class="fc-badge large-badge">مصدر البيانات</span></div>
+      <div class="upload-card-label sky">&#x1F4C2; الملف الكبير <span class="upload-card-badge large-badge">مصدر البيانات</span></div>
       <div class="upload-zone" id="omDropLarge" onclick="document.getElementById('omLargeFileIn').click()"
            ondragover="event.preventDefault();this.classList.add('drag')"
            ondragleave="this.classList.remove('drag')" ondrop="omHandleDropCheck(event,'large')">
@@ -610,7 +561,7 @@ body.light .om-xls-grid td.om-plate-dup{background:rgba(253,224,71,.55)!importan
       </div>
     </div>
     <div class="file-card violet-card">
-      <div class="fc-label violet">&#x1F4CB; الملف الصغير <span class="fc-badge small-badge">قائمة البحث</span></div>
+      <div class="upload-card-label violet">&#x1F4CB; الملف الصغير <span class="upload-card-badge small-badge">قائمة البحث</span></div>
       <div class="upload-zone" id="omDropSmall" onclick="document.getElementById('omSmallFileIn').click()"
            ondragover="event.preventDefault();this.classList.add('drag')"
            ondragleave="this.classList.remove('drag')" ondrop="omHandleDropCheck(event,'small')">
@@ -788,27 +739,26 @@ body.light .om-xls-grid td.om-plate-dup{background:rgba(253,224,71,.55)!importan
           <div id="checkLivePlateColHit" class="check-live-plate-scroll"></div>
         </div>
       </div>
-      <div id="checkLivePlateColMiss" class="check-live-plate-scroll" style="display:none"></div>
     </div>
 
     <div class="panel violet-accent" style="margin-top:1rem" id="checkSessionSheetPanel">
       <div class="ptitle violet">&#x1F4C4; جدول جلسة التشيك (مثل التسجيل)</div>
       <div style="margin-bottom:.55rem">
         <label class="lbl">&#x1F4DD; اسم ورقة / ملف التصدير</label>
-        <input type="text" id="checkSessionSheetName" class="fc-plate-check-input" style="max-width:420px;width:100%;margin-top:.35rem" placeholder="مثال: تشيك زيارة 17-4" dir="rtl" oninput="syncCheckSessionSheetTitle()"/>
+        <input type="text" id="checkSessionSheetName" class="check-session-input" style="max-width:420px;width:100%;margin-top:.35rem" placeholder="مثال: تشيك زيارة 17-4" dir="rtl" oninput="syncCheckSessionSheetTitle()"/>
       </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:.55rem;margin:.55rem 0 .75rem;align-items:end">
         <div>
           <label class="lbl">الحي</label>
-          <input type="text" id="checkSessionDefaultDistrict" class="fc-plate-check-input" style="width:100%;margin-top:.25rem" dir="rtl" placeholder="يُملأ في الصفوف الجديدة" oninput="saveCheckSessionData()"/>
+          <input type="text" id="checkSessionDefaultDistrict" class="check-session-input" style="width:100%;margin-top:.25rem" dir="rtl" placeholder="يُملأ في الصفوف الجديدة" oninput="saveCheckSessionData()"/>
         </div>
         <div>
           <label class="lbl">الشارع</label>
-          <input type="text" id="checkSessionDefaultStreet" class="fc-plate-check-input" style="width:100%;margin-top:.25rem" dir="rtl" placeholder="يُملأ في الصفوف الجديدة" oninput="saveCheckSessionData()"/>
+          <input type="text" id="checkSessionDefaultStreet" class="check-session-input" style="width:100%;margin-top:.25rem" dir="rtl" placeholder="يُملأ في الصفوف الجديدة" oninput="saveCheckSessionData()"/>
         </div>
         <div>
           <label class="lbl">اسم المسجّل</label>
-          <input type="text" id="checkSessionDefaultRecorder" class="fc-plate-check-input" style="width:100%;margin-top:.25rem" dir="rtl" placeholder="يُملأ في الصفوف الجديدة" oninput="saveCheckSessionData()"/>
+          <input type="text" id="checkSessionDefaultRecorder" class="check-session-input" style="width:100%;margin-top:.25rem" dir="rtl" placeholder="يُملأ في الصفوف الجديدة" oninput="saveCheckSessionData()"/>
         </div>
       </div>
       <div class="om-xls-sheet" id="checkSessionXlsSheet">
@@ -921,6 +871,7 @@ body.light .om-xls-grid td.om-plate-dup{background:rgba(253,224,71,.55)!importan
     <div class="ptitle violet">&#x1F6E1;&#xFE0F; Admin</div>
     <div class="row2">
       <div><label class="lbl">اسم المستخدم</label><input type="text" id="admNewUser" placeholder="username"/></div>
+      <div><label class="lbl">الاسم (للأدمن فقط)</label><input type="text" id="admNewDisplayName" maxlength="200" placeholder="من هو المستخدم — لا يُستخدم للدخول"/></div>
       <div>
         <label class="lbl">كلمة المرور</label>
         <div class="pw-row" style="margin-top:.35rem">
@@ -938,7 +889,7 @@ body.light .om-xls-grid td.om-plate-dup{background:rgba(253,224,71,.55)!importan
     </div>
     <div style="display:flex;gap:.6rem;margin-top:.8rem;flex-wrap:wrap">
       <button class="tb-btn primary" onclick="adminCreateUser()">إنشاء مستخدم</button>
-      <button class="tb-btn outline" onclick="adminLoadUsers()">تحديث القائمة</button>
+      <button class="tb-btn outline" onclick="adminRefreshUserAdminPanel()">تحديث القائمة</button>
       <a class="tb-btn outline" href="/admin/check-storage" target="_blank" rel="noopener" style="text-decoration:none;display:inline-flex;align-items:center">&#x1F5C4; فرز Postgres</a>
     </div>
     <div id="adminMsg" style="margin-top:.6rem;font-family:var(--mono);font-size:.75rem;color:var(--dim2)"></div>
@@ -951,17 +902,32 @@ body.light .om-xls-grid td.om-plate-dup{background:rgba(253,224,71,.55)!importan
       <div><label class="lbl">حد صفوف المجموعة (رصيد مشترك)</label><input type="number" id="admNewGroupRowsLimit" min="1" step="1" value="3000000"/></div>
       <div style="align-self:end"><button type="button" class="tb-btn primary" onclick="adminCreateGroup()">إنشاء مجموعة</button></div>
     </div>
-    <div class="tbl-outer" style="margin-top:.55rem;max-width:520px">
-      <table style="font-size:.76rem"><thead><tr><th>ID</th><th>الاسم</th><th>المستخدم</th><th>حد الصفوف</th><th></th></tr></thead><tbody id="adminGroupsBody"></tbody></table>
+    <p style="font-size:.72rem;color:var(--dim2);margin:.55rem 0 .45rem;line-height:1.45">عرض مجموعة: اختر من القائمة لرؤية بيانات المجموعة وجدول الأعضاء.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:.55rem;align-items:end;margin-bottom:.55rem">
+      <div><label class="lbl">المجموعة</label>
+        <select id="admGroupPick" style="min-width:260px;padding:.4rem;border-radius:8px;border:1px solid var(--brd2);font-size:.74rem" onchange="adminOnGroupPickChange()">
+          <option value="">— اختر —</option>
+        </select>
+      </div>
+      <button type="button" class="tb-btn outline" onclick="adminLoadGroups()">تحديث قائمة المجموعات</button>
+    </div>
+    <div id="admGroupDetail" style="display:none;margin-top:.55rem;padding:.85rem;border:1px solid var(--brd2);border-radius:10px;background:var(--panel2)">
+      <div id="admGroupDetailInner" style="font-size:.76rem;line-height:1.55"></div>
     </div>
   </div>
   <div class="panel">
-    <div class="ptitle">Users</div>
-    <div class="tbl-outer">
-      <table>
-        <thead><tr><th>ID</th><th>Username</th><th>Admin</th><th>Active</th><th>Device</th><th>مجموعة</th><th>المستخدم</th><th>حد المستخدم</th><th>Actions</th></tr></thead>
-        <tbody id="adminUsersBody"></tbody>
-      </table>
+    <div class="ptitle">المستخدمون</div>
+    <p style="font-size:.72rem;color:var(--dim2);margin:0 0 .5rem;line-height:1.45">اختر مستخدمًا من القائمة لعرض كل البيانات والاشتراك (٣٠ يومًا ثابتة، آخر ٣ أيام ضمن الشهر بنفس الصلاحيات). زر <strong>تجديد الاشتراك</strong>: إن ضغطته <strong>قبل</strong> نهاية الـ٣٠ يومًا يُثبَّت الدفع ويستمر العميل حتى نهاية المدة، ويُرحَّل استهلاك Gemini من تاريخ الضغط حتى النهاية للشهر التالي؛ وإن ضغطته <strong>بعد</strong> انتهاء المدة يُمسح سجل Gemini ويبدأ شهر جديد من وقت الضغط.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:.55rem;align-items:end;margin-bottom:.55rem">
+      <div><label class="lbl">المستخدم</label>
+        <select id="admUserPick" style="min-width:260px;padding:.4rem;border-radius:8px;border:1px solid var(--brd2);font-size:.74rem" onchange="adminOnUserPickChange()">
+          <option value="">— اختر —</option>
+        </select>
+      </div>
+      <button type="button" class="tb-btn outline" onclick="adminRefreshUserAdminPanel()">تحديث القائمة</button>
+    </div>
+    <div id="admUserDetail" style="display:none;margin-top:.55rem;padding:.85rem;border:1px solid var(--brd2);border-radius:10px;background:var(--panel2)">
+      <div id="admUserDetailInner" style="font-size:.76rem;line-height:1.55"></div>
     </div>
   </div>
 
@@ -1020,7 +986,7 @@ body.light .om-xls-grid td.om-plate-dup{background:rgba(253,224,71,.55)!importan
 
 
 </div><!-- wrap -->
-<script src="/static/_om_field.js?v=pgcheck18"></script>
+<script src="/static/_om_field.js"></script>
 <script>
 const MAX_REC_SECS=300;
 // ── State ──────────────────────────────────────────────
@@ -1042,28 +1008,18 @@ const CHECK_SESSION_STORAGE_KEY='checkSessionSheet_v1';
 let checkSessionRows=[];
 let exportAppendRowsTafrigh=[],exportAppendRowsCheck=[];
 let exportAppendFileNameTafrigh='',exportAppendFileNameCheck='';
-/* زمن الاستجابة — Live (بالترتيب):
-   1) CHECK_LIVE_SILENCE_MS: بعد انخفاض الصوت يُرسل end_of_turn → يحدّد نهاية «الدور» عند Google.
-   2) شبكة + موديل Live: حتى يكتمل JSON (أو turnComplete) — خارج تطبيقنا.
-   3) plate_result يقدر ييجي جزئيًا قبل نهاية الدور؛ check_session_sync كان ييجي مع نهاية الدور فقط.
-   جدول الجلسة يُحدَّث أيضًا من plate_result عند found===false لتقليل فجوة الظهور. */
+/* Live: بعد صمت CHECK_LIVE_SILENCE_MS يُرسل end_of_turn. أحداث WS: plate_result + check_session_sync. moving = لا صف في جدول الجلسة ولا إنذار صوت للضربة. */
 const CHECK_LIVE_SILENCE_MS=300;
 const CHECK_LIVE_VOICE_RMS_THRESHOLD=0.012;
 const CHECK_LIVE_CLIENT_ID_KEY='checkLiveClientId_v1';
 let checkLiveHeartbeatTimer=null;
-let fcRecState='idle',fcMediaRec=null,fcAllChunks=[],fcCurChunks=[];
-let fcLiveBlob=null,fcAudioUrl=null;
-let fcGpsPoints=[],fcAutoTimer=null,fcRecTimer=null,fcRecSecs=0,fcGpsMode='auto';
-let fcRefFile=null,fcRefPlates=[],fcExtractedRows=[],fcMatchedRows=[];
-let fcLastMyLatLng=null; // origin lat,lng from last recording (for directions links)
-let fcAllRows=[];  // cumulative across all recordings
 let gmapsFile=null,gmMap=null,gmMarkers=[],gmMapsApiPromise=null;
 let gmUserMarker=null,gmUserWatchId=null;
 let gmFollowZoom=17;
 let gmFollowEnabled=false;
 let gmHasUserZoomed=false;
 let gmHeadersLoaded=false;
-const audioEls={live:null,fc:null};
+const audioEls={live:null};
 const FIRST_PERM_ASKED_KEY='firstVisitPermAsked_v1';
 const MIC_PERM_GRANTED_KEY='micPermGranted_v1';
 const GEO_PERM_GRANTED_KEY='geoPermGranted_v1';
@@ -1097,24 +1053,18 @@ async function requestFirstVisitPermissions(){
 
 window.addEventListener('DOMContentLoaded',()=>{
   audioEls.live=document.getElementById('liveAudio');
-  const fcAud=document.getElementById('fcAudio');
-  if(fcAud){ audioEls.fc=fcAud; bindAudioPlayer('fc'); }
-  bindAudioPlayer('live');bindAudioPlayer('up');
+  bindAudioPlayer('live');
   loadTable();renderTable();
   if(typeof syncTafrighSheetTitle==='function') syncTafrighSheetTitle();
-  if(document.getElementById('fcExtractedSection')) loadFcData();
   if(document.getElementById('checkSessionExcelBody')) loadCheckSessionData();
   if(typeof loadOmPersistedCheckFiles==='function') loadOmPersistedCheckFiles();
   setMode('auto');
-  if(document.getElementById('fcMM')) fcSetMode('auto');
   if(typeof refreshUserGeminiModels==='function') refreshUserGeminiModels();
   loadPersistedCheckFiles();
   setMode('auto');
   if(localStorage.getItem('theme')==='light')applyTheme('light');
   requestFirstVisitPermissions();
 });
-// ── Global settings ───────────────────────────────────
-function onGlobalChange(){ checkReady(); fcCheckReady(); }
 // ── User Gemini model picks (lists from server) ───────
 const USER_REST_MODEL_KEY='userGeminiRestModel_v1';
 const USER_LIVE_MODEL_KEY='userGeminiLiveModel_v1';
@@ -1143,7 +1093,6 @@ function onUserGeminiModelChange(){
     if(r&&r.value) localStorage.setItem(USER_REST_MODEL_KEY,r.value);
     if(l&&l.value) localStorage.setItem(USER_LIVE_MODEL_KEY,l.value);
   }catch(_){}
-  checkReady(); fcCheckReady();
 }
 async function refreshUserGeminiModels(){
   if(localStorage.getItem('auth_session_v1')!=='1'){
@@ -1191,7 +1140,6 @@ async function refreshUserGeminiModels(){
       }
     }
   }catch(e){}
-  checkReady(); fcCheckReady();
 }
 // ── Audio blob extension (تسجيل مباشر = WebM/Opus بدون تحويل) ──
 function audioBlobExt(blob){
@@ -1203,8 +1151,66 @@ function audioBlobExt(blob){
   return 'webm';
 }
 // ══ SETTINGS MODAL (معلومات + خروج) ═══════════════════════════════════════
-function openSettings(){
+async function openSettings(){
   document.getElementById('settingsModal').classList.add('open');
+  const box=document.getElementById('settingsSubscriptionInfo');
+  if(!box) return;
+  box.style.display='none';
+  box.innerHTML='';
+  // hasSession() lives inside a later IIFE — not on window; use same flag as probeAuth.
+  if(localStorage.getItem('auth_session_v1')!=='1'){
+    return;
+  }
+  try{
+    const r=await fetch('/auth/me',{credentials:'include'});
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok) return;
+    const uname=(j.username!=null&&String(j.username).trim())?String(j.username).trim():'';
+    const unEsc=(typeof esc==='function')?esc(uname):uname.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    if(j.is_admin===true){
+      box.innerHTML='<p style="margin:0 0 .35rem;font-size:.72rem;color:var(--dim2)">'+(uname?('مسجّل كـ: <strong style="color:var(--text)">'+unEsc+'</strong>'):'')+'</p>'+
+        '<p style="margin:0;color:var(--dim2)">حساب أدمن — لا تُطبَّق دورة الاشتراك على هذا الحساب.</p>';
+      box.style.display='';
+      return;
+    }
+    const days=j.subscription_days_remaining;
+    const ends=j.subscription_cycle_ends_at;
+    if(days==null && !ends){
+      box.innerHTML='<p style="margin:0 0 .35rem;font-size:.72rem;color:var(--dim2)">'+(uname?('مسجّل كـ: <strong style="color:var(--text)">'+unEsc+'</strong>'):'')+'</p>'+
+        '<p style="margin:0;color:var(--dim2)">لم يُضبط تاريخ بداية الاشتراك لهذا الحساب. اطلب من المسؤول ضبط الدورة.</p>';
+      box.style.display='';
+      return;
+    }
+    const grace=j.in_grace_period===true;
+    const daysNum=(typeof days==='number')?days:null;
+    let endsDisplay='—';
+    if(ends){
+      try{
+        const dte=new Date(ends);
+        if(!isNaN(dte.getTime())) endsDisplay=dte.toLocaleString();
+      }catch(_){}
+    }
+    const rest=Number(j.gemini_rest_cost_usd||0);
+    const live=Number(j.gemini_live_cost_usd||0);
+    const total=(typeof j.gemini_total_cost_usd==='number')?Number(j.gemini_total_cost_usd):(rest+live);
+    const graceNote=grace?' <span style="color:var(--amber);font-weight:600;font-size:.68rem">(آخر ٣ أيام سماح)</span>':'';
+    const tblSt='width:100%;border-collapse:collapse;font-size:.78rem;line-height:1.5;margin:0';
+    const thSt='text-align:right;padding:.38rem .45rem;border:1px solid var(--brd2);background:var(--s2);color:var(--dim2);font-weight:700;white-space:nowrap;width:42%;vertical-align:middle';
+    const tdSt='text-align:right;padding:.38rem .45rem;border:1px solid var(--brd2);color:var(--text);font-family:var(--mono);font-size:.74rem;vertical-align:middle';
+    let rows='';
+    rows+='<tr><th style="'+thSt+'">حسابك</th><td style="'+tdSt+'">'+(uname?unEsc:'—')+'</td></tr>';
+    rows+='<tr><th style="'+thSt+'">باقي أيام التجديد</th><td style="'+tdSt+'">'+(daysNum!=null?String(daysNum):'—')+' يومًا'+graceNote+'</td></tr>';
+    rows+='<tr><th style="'+thSt+'">تاريخ انتهاء التجديد</th><td style="'+tdSt+'">'+endsDisplay+'</td></tr>';
+    rows+='<tr><th style="'+thSt+'">حساب التسجيل (REST)</th><td style="'+tdSt+'">~$'+rest.toFixed(4)+'</td></tr>';
+    rows+='<tr><th style="'+thSt+'">حساب التشيك (Live)</th><td style="'+tdSt+'">~$'+live.toFixed(4)+'</td></tr>';
+    rows+='<tr><th style="'+thSt+'">الحساب الكلي</th><td style="'+tdSt+'"><strong>~$'+total.toFixed(4)+'</strong></td></tr>';
+    let html='<table dir="rtl" style="'+tblSt+'">'+rows+'</table>';
+    if(daysNum===0){
+      html+='<p style="margin:.55rem 0 0;font-size:.72rem;color:var(--red)">انتهت مدة الدورة — تواصل مع المسؤول لتجديد الاشتراك.</p>';
+    }
+    box.innerHTML=html;
+    box.style.display='';
+  }catch(_){}
 }
 function closeSettings(){
   document.getElementById('settingsModal').classList.remove('open');
@@ -1260,16 +1266,6 @@ async function loadPersistedCheckFiles(){
     detectColForSide('large');
   }catch(e){}
 }
-
-// ══ CLEAR MATCHED RESULTS (تفريغ / fc) ═════════════════════════════════════════
-function fcClearMatchedResults(){
-  fcMatchedRows = [];
-  saveFcData();
-  const rs=document.getElementById('fcResultSection');
-  if(rs) rs.style.display = 'none';
-  if(document.getElementById('fcStatusBar')) fcShowStatus('ok', '\u062A\u0645 \u0645\u0633\u062D \u0646\u062A\u0627\u0626\u062C \u0627\u0644\u062A\u0634\u064A\u0643');
-}
-
 
 // ── Page / theme / modal ──────────────────────────────
 function switchPage(p){
@@ -1713,14 +1709,26 @@ async function capturePin(){
 async function collectAutoGps(){try{const p=await getPos();const pt=mkPt(p);liveGps.push(pt);updateGpsUI(pt,liveGps.length,false);}catch(e){setDot('err','GPS: '+e.message);}}
 function mkPt(p){return{lat:+p.coords.latitude.toFixed(7),lng:+p.coords.longitude.toFixed(7),accuracy:Math.round(p.coords.accuracy)};}
 function updateGpsUI(pt,cnt,manual){
-  document.getElementById('gLat').textContent=pt.lat;document.getElementById('gLng').textContent=pt.lng;
-  document.getElementById('gAcc').textContent=pt.accuracy+'m';document.getElementById('gCnt').textContent=cnt;
-  document.getElementById('pinCount').textContent=cnt+' نقطة';
-  const log=document.getElementById('gLog');const d=document.createElement('div');d.className=manual?'gm':'ge';
-  d.textContent='['+(manual?'📍':'⏱')+' #'+cnt+'] '+pt.lat+', '+pt.lng+'  \xB1'+pt.accuracy+'m';
-  log.appendChild(d);log.scrollTop=log.scrollHeight;
+  const latEl=document.getElementById('gLat'), lngEl=document.getElementById('gLng'), accEl=document.getElementById('gAcc'), cntEl=document.getElementById('gCnt');
+  if(latEl) latEl.textContent=pt.lat;
+  if(lngEl) lngEl.textContent=pt.lng;
+  if(accEl) accEl.textContent=pt.accuracy+'m';
+  if(cntEl) cntEl.textContent=cnt;
+  const pin=document.getElementById('pinCount');
+  if(pin) pin.textContent=cnt+' نقطة';
+  const log=document.getElementById('gLog');
+  if(log){
+    const d=document.createElement('div');d.className=manual?'gm':'ge';
+    d.textContent='['+(manual?'📍':'⏱')+' #'+cnt+'] '+pt.lat+', '+pt.lng+'  \xB1'+pt.accuracy+'m';
+    log.appendChild(d);log.scrollTop=log.scrollHeight;
+  }
 }
-function setDot(state,txt){const d=document.getElementById('gDot');d.className='dot'+(state==='on'?' on':state==='err'?' err':'');document.getElementById('gTxt').textContent=txt;}
+function setDot(state,txt){
+  const d=document.getElementById('gDot');
+  if(d) d.className='dot'+(state==='on'?' on':state==='err'?' err':'');
+  const t=document.getElementById('gTxt');
+  if(t) t.textContent=txt;
+}
 // ── Sounds ────────────────────────────────────────────
 // ── Friendly error messages ───────────────────────────
 function friendlyError(raw){
@@ -1766,7 +1774,7 @@ async function getMicStreamOrThrow(){
 }
 // ── Tafrigh recording ─────────────────────────────────
 function onRecBtnClick(){if(recState==='idle')startFreshRec();else if(recState==='recording')stopRec();}
-async function startFreshRec(){allChunks=[];curChunks=[];liveGps=[];recSecs=0;liveBlob=null;liveAudioUrl=null;document.getElementById('pinCount').textContent='0 نقطة';document.getElementById('gLog').innerHTML='';await doStartRec();}
+async function startFreshRec(){allChunks=[];curChunks=[];liveGps=[];recSecs=0;liveBlob=null;liveAudioUrl=null;document.getElementById('pinCount').textContent='0 نقطة';const gl=document.getElementById('gLog');if(gl) gl.innerHTML='';await doStartRec();}
 async function continueRec(){curChunks=[];hideChoices();await doStartRec();}
 function startNewRec(){hideChoices();startFreshRec();}
 async function doStartRec(){
@@ -1786,7 +1794,7 @@ async function doStartRec(){
       liveAudioUrl=URL.createObjectURL(liveBlob);
       setAudioSrc('live',liveAudioUrl);
       document.getElementById('liveAudioWrap').classList.add('show');
-      showChoices();checkReady();playStopSound();
+      showChoices();playStopSound();
     };
     mediaRec.start(500);
     if(gpsMode==='auto'){const iv=parseInt(document.getElementById('gpsInt').value)||5;collectAutoGps();autoTimer=setInterval(collectAutoGps,iv*1000);setDot('on','تلقائي كل '+iv+'s');}
@@ -1851,7 +1859,6 @@ function seekAudio(key,ev){
 function setSpd(key){const v=parseFloat(document.getElementById(key+'Spd').value);audioEls[key].playbackRate=v;document.getElementById(key+'SpdV').textContent=v.toFixed(2)+'\xD7';}
 function fmtTime(s){if(!s||isNaN(s))return'0:00';return Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0');}
 // ── Queue ─────────────────────────────────────────────
-function checkReady(){}
 function addToQueue(){
   if(!liveBlob){showStatus('err','لا يوجد تسجيل');return;}
   const blob=liveBlob;
@@ -1955,12 +1962,11 @@ function _resetLiveUI(){
   document.getElementById('liveAudioWrap').classList.remove('show');
   document.getElementById('recChoices').classList.remove('show');
   document.getElementById('recLbl').textContent='اضغط للتسجيل';
-  document.getElementById('gCnt').textContent='0';
+  const gc=document.getElementById('gCnt');if(gc) gc.textContent='0';
   document.getElementById('pinCount').textContent='0 نقطة';
   document.getElementById('timer').classList.remove('on');
   document.getElementById('recProgress').classList.remove('on');
-  document.getElementById('gLog').innerHTML='<span>سيبدأ تسجيل الإحداثيات مع بدء التسجيل …</span>';
-  checkReady();
+  const gl=document.getElementById('gLog');if(gl) gl.innerHTML='<span>سيبدأ تسجيل الإحداثيات مع بدء التسجيل …</span>';
 }
 
 function dlQueueAudio(idx){
@@ -2060,7 +2066,6 @@ async function sendAll(){
     await new Promise(r=>setTimeout(r,600));
   }
 }
-async function sendAllQueued(){await sendAll();}
 // ── Excel table ───────────────────────────────────────
 function saveTable(){
   if(!Array.isArray(tableRows)) tableRows=[];
@@ -2098,7 +2103,7 @@ function renderTable(){
       +'<td class="td-edit" style="font-family:var(--mono);font-size:.78rem" contenteditable="true" onblur="editCell('+i+',\'recording_date\',this.textContent)">'+esc(row.recording_date||'')+'</td>'
       +'<td class="td-edit" contenteditable="true" onblur="editCell('+i+',\'district_name\',this.textContent)">'+esc(row.district_name||'')+'</td>'
       +'<td class="td-edit" contenteditable="true" onblur="editCell('+i+',\'street_name\',this.textContent)">'+esc(row.street_name||'')+'</td>'
-      +'<td class="td-edit td-locdetails" style="font-size:.78rem;color:var(--dim2)" contenteditable="true" onblur="editCell('+i+',\'location_details\',this.textContent)">'+esc(row.location_details||'')+'</td>'
+      +'<td class="td-edit td-locdetails" style="font-size:.78rem;color:var(--dim2)" contenteditable="true" onblur="editCell('+i+',\'notes\',this.textContent)">'+esc(row.notes||row.location_details||'')+'</td>'
       +'<td class="td-edit" contenteditable="true" onblur="editCell('+i+',\'vehicle_type\',this.textContent)">'+esc(row.vehicle_type||'')+'</td>'
       +'<td class="td-edit" contenteditable="true" onblur="editCell('+i+',\'recorder_name\',this.textContent)">'+esc(row.recorder_name||'')+'</td>'
       +'<td class="td-gps">'+esc(streetLocForRow(row)||'—')+'</td>'
@@ -2431,42 +2436,35 @@ function checkLiveNotifyPlateHit(plateStr){
   checkLivePlayHitBeep();
 }
 function checkLiveAppendResultRow(data){
-  const hitCol=document.getElementById('checkLivePlateColHit');
-  const missCol=document.getElementById('checkLivePlateColMiss');
-  const list=data.found===true?hitCol:missCol;
+  if(data.found!==true) return;
+  const list=document.getElementById('checkLivePlateColHit');
   if(!list) return;
   const plateText=String(data.plate||'\u2014');
   const nk=normPlate(plateText);
-  if(data.found===true && nk){
+  if(nk){
     const kids=list.children||[];
     for(let i=0;i<kids.length;i++){
       const el=kids[i];
       if(String(el.dataset&&el.dataset.nk||'')!==nk) continue;
       el.textContent=plateText;
       if(el!==list.firstChild) list.insertBefore(el,list.firstChild);
-      // retrigger highlight without duplicating cards
       el.classList.remove('hit');
       void el.offsetWidth;
       el.classList.add('hit');
-      checkLiveNotifyPlateHit(plateText);
+      if(!data.moving) checkLiveNotifyPlateHit(plateText);
       return;
     }
   }
   const div=document.createElement('div');
-  div.className='live-plate-item ';
-  if(data.found===true) div.className+='hit';
-  else if(data.found===false) div.className+='miss';
-  else div.className+='unk';
+  div.className='live-plate-item hit';
   div.textContent=plateText;
   if(nk) div.dataset.nk=nk;
   list.insertBefore(div,list.firstChild);
-  if(data.found===true) checkLiveNotifyPlateHit(data.plate||'');
+  if(!data.moving) checkLiveNotifyPlateHit(data.plate||'');
 }
 function checkLiveClearPlates(){
   const h=document.getElementById('checkLivePlateColHit');
-  const m=document.getElementById('checkLivePlateColMiss');
   if(h) h.innerHTML='';
-  if(m) m.innerHTML='';
   checkLiveLastHitNotifyKey='';
   checkLiveLastHitNotifyTs=0;
 }
@@ -2582,7 +2580,8 @@ function checkLiveFillGpsForSessionRow(idx){
 }
 function checkLiveMaybeAppendSessionRow(data){
   if(!data||data.skip_session_sheet) return;
-  if(data.found!==false) return;
+  if(data.moving) return;
+  if(data.found!==true && data.found!==false) return;
   const plate=String(data.plate||'').trim();
   if(!plate) return;
   const now=new Date();
@@ -2608,7 +2607,7 @@ function checkLiveMaybeAppendSessionRow(data){
   if(typeof navigator.vibrate==='function'){
     try{ navigator.vibrate([55,35,70]); }catch(_v){}
   }
-  checkLivePlaySessionSheetNewBeep();
+  if(data.found===false) checkLivePlaySessionSheetNewBeep();
 }
 function checkLiveUpdateSessionRowByNorm(nk,plate){
   if(!nk||!Array.isArray(checkSessionRows)) return false;
@@ -2660,7 +2659,10 @@ function checkLiveSyncSessionFromItems(items){
     }
     if(it.found===false){
       const updated=checkLiveUpdateSessionRowByNorm(nk,plate);
-      if(!updated) checkLiveMaybeAppendSessionRow({plate:plate,found:false});
+      if(!updated) checkLiveMaybeAppendSessionRow({plate:plate,found:false,moving:false});
+    }else if(it.found===true){
+      const updated=checkLiveUpdateSessionRowByNorm(nk,plate);
+      if(!updated) checkLiveMaybeAppendSessionRow({plate:plate,found:true,moving:false});
     }
   }
 }
@@ -2717,9 +2719,9 @@ function checkLiveOnMessage(ev){
   if(t==='plate_result'){
     const d=j.data||{};
     checkLiveAppendResultRow(d);
-    if(d.found===false){
+    if(!d.moving && (d.found===true||d.found===false)){
       const p=String(d.plate||'').trim();
-      if(p) checkLiveSyncSessionFromItems([{plate:p,found:false,moving:false}]);
+      if(p) checkLiveSyncSessionFromItems([{plate:p,found:d.found===true,moving:false}]);
     }
     return;
   }
@@ -2992,281 +2994,6 @@ async function checkLiveToggleMic(){
     checkLiveMicOn=false;
   }
 }
-// ── Field check — GPS mode ─────────────────────────────
-function fcSetMode(m){
-  fcGpsMode=m;
-  document.getElementById('fcMM').classList.toggle('sel',m==='manual');
-  document.getElementById('fcMA').classList.toggle('sel',m==='auto');
-  document.getElementById('fcAutoOpts').style.display=m==='auto'?'block':'none';
-}
-
-// ── Field check — recording ────────────────────────────
-function fcOnRecBtnClick(){if(fcRecState==='idle')fcStartFreshRec();else if(fcRecState==='recording')fcStopRec();}
-async function fcStartFreshRec(){
-  fcAllChunks=[];fcCurChunks=[];fcGpsPoints=[];fcRecSecs=0;fcLiveBlob=null;fcAudioUrl=null;
-  document.getElementById('fcPinCount').textContent='0 \u0646\u0642\u0637\u0629';
-  document.getElementById('fcGLog').innerHTML='';
-  await fcDoStartRec();
-}
-async function fcContinueRec(){fcCurChunks=[];fcHideChoices();await fcDoStartRec();}
-function fcStartNewRec(){fcHideChoices();fcStartFreshRec();}
-
-async function fcDoStartRec(){
-  try{
-    const stream=await getMicStreamOrThrow();
-    const mime=['audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus','audio/ogg','audio/mp4'].find(t=>MediaRecorder.isTypeSupported(t))||'';
-    fcMediaRec=new MediaRecorder(stream,mime?{mimeType:mime}:{});
-    fcCurChunks=[];fcRecState='recording';playStartSound();
-    fcMediaRec.ondataavailable=e=>{if(e.data.size>0)fcCurChunks.push(e.data);};
-    fcMediaRec.onstop=()=>{
-      fcAllChunks=[...fcAllChunks,...fcCurChunks];
-      const raw=new Blob(fcAllChunks,{type:fcMediaRec.mimeType||'audio/webm'});
-      document.getElementById('fcRecChoices').classList.remove('show');
-      document.getElementById('fcRecLbl').textContent='';
-      fcLiveBlob=raw;
-      if(fcAudioUrl)URL.revokeObjectURL(fcAudioUrl);
-      fcAudioUrl=URL.createObjectURL(fcLiveBlob);
-      setAudioSrc('fc',fcAudioUrl);
-      document.getElementById('fcAudioWrap').classList.add('show');
-      fcShowChoices();fcCheckReady();playStopSound();
-    };
-    fcMediaRec.start(500);
-    if(fcGpsMode==='auto'){
-      const iv=parseInt(document.getElementById('fcGpsInt').value)||5;
-      fcCollectAutoGps();
-      fcAutoTimer=setInterval(fcCollectAutoGps,iv*1000);
-      fcSetDot('on','\u062A\u0644\u0642\u0627\u0626\u064A \u0643\u0644 '+iv+'s');
-    }else fcSetDot('on','\u064A\u062F\u0648\u064A \u2014 \u0627\u0636\u063A\u0637 \u{1F4CD} \u0644\u0643\u0644 \u0633\u064A\u0627\u0631\u0629');
-    clearInterval(fcRecTimer);
-    document.getElementById('fcTimer').classList.add('on');
-    document.getElementById('fcRecProgress').classList.add('on');
-    fcRecTimer=setInterval(()=>{fcRecSecs++;fcUpdateTimerUI();if(fcRecSecs>=MAX_REC_SECS)fcStopRec();},1000);
-    fcUpdateTimerUI();
-    document.getElementById('fcRecBtn').classList.add('recording');
-    document.getElementById('fcRecIcon').textContent='\u23F9';
-    document.getElementById('fcRingShell').classList.add('rec-rings');
-    document.getElementById('fcRecLbl').textContent='\u062C\u0627\u0631\u064A \u0627\u0644\u062A\u0633\u062C\u064A\u0644 \u2026 \u0627\u0636\u063A\u0637 \u0644\u0644\u0625\u064A\u0642\u0627\u0641';
-    document.getElementById('fcGpsPinBtn').disabled=false;
-  }catch(e){
-    fcShowStatus('err','\u0644\u0627 \u064A\u0645\u0643\u0646 \u0627\u0644\u0648\u0635\u0648\u0644 \u0644\u0644\u0645\u064A\u0643\u0631\u0648\u0641\u0648\u0646: '+e.message);
-    fcRecState='idle';
-  }
-}
-
-function fcStopRec(){
-  if(fcMediaRec&&fcMediaRec.state!=='inactive'){fcMediaRec.stop();fcMediaRec.stream.getTracks().forEach(t=>t.stop());}
-  fcRecState='stopped';
-  clearInterval(fcAutoTimer);fcAutoTimer=null;
-  clearInterval(fcRecTimer);fcRecTimer=null;
-  document.getElementById('fcRecBtn').classList.remove('recording');
-  document.getElementById('fcRecIcon').textContent='\u23FA';
-  document.getElementById('fcRingShell').classList.remove('rec-rings');
-  document.getElementById('fcRecLbl').textContent='';
-  document.getElementById('fcGpsPinBtn').disabled=true;
-  fcSetDot('','\u062A\u0648\u0642\u0641 \u2014 '+fcGpsPoints.length+' \u0646\u0642\u0637\u0629');
-}
-
-function fcShowChoices(){
-  document.getElementById('fcRecChoices').classList.add('show');
-  document.getElementById('fcRecLbl').textContent='\u0627\u062E\u062A\u0631: \u0645\u062A\u0627\u0628\u0639\u0629 \u0623\u0648 \u062A\u0633\u062C\u064A\u0644 \u062C\u062F\u064A\u062F';
-}
-function fcHideChoices(){
-  document.getElementById('fcRecChoices').classList.remove('show');
-  document.getElementById('fcRecLbl').textContent='\u062C\u0627\u0631\u064A \u0627\u0644\u062A\u0633\u062C\u064A\u0644 \u2026';
-}
-
-function fcUpdateTimerUI(){
-  const fmt=s=>String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
-  document.getElementById('fcTimer').textContent=fmt(fcRecSecs)+' / 05:00';
-  const pct=(fcRecSecs/MAX_REC_SECS)*100;
-  document.getElementById('fcRecBar').style.width=pct+'%';
-  const warn=(MAX_REC_SECS-fcRecSecs)<=60;
-  document.getElementById('fcTimer').classList.toggle('warn',warn);
-  document.getElementById('fcRecBar').classList.toggle('warn',warn);
-}
-
-function fcDownloadAudio(){
-  if(!fcLiveBlob)return;
-  const ts=new Date().toISOString().slice(0,19).replace(/[T:]/g,'-');
-  triggerDownload(fcLiveBlob,'\u062A\u0634\u064A\u0643_'+ts+'.'+audioBlobExt(fcLiveBlob));
-}
-
-// ── Field check GPS helpers ───────────────────────────
-async function fcCapturePin(){
-  if(fcRecState!=='recording')return;
-  const btn=document.getElementById('fcGpsPinBtn');
-  try{
-    const p=await getPos();const pt=mkPt(p);
-    fcGpsPoints.push(pt);fcUpdateGpsUI(pt,fcGpsPoints.length,true);
-    btn.classList.add('flash');setTimeout(()=>btn.classList.remove('flash'),300);
-    playPinSound();
-  }catch(e){fcSetDot('err','GPS: '+e.message);}
-}
-async function fcCollectAutoGps(){
-  try{const p=await getPos();const pt=mkPt(p);fcGpsPoints.push(pt);fcUpdateGpsUI(pt,fcGpsPoints.length,false);}
-  catch(e){fcSetDot('err','GPS: '+e.message);}
-}
-function fcUpdateGpsUI(pt,cnt,manual){
-  document.getElementById('fcGLat').textContent=pt.lat;
-  document.getElementById('fcGLng').textContent=pt.lng;
-  document.getElementById('fcGAcc').textContent=pt.accuracy+'m';
-  document.getElementById('fcGCnt').textContent=cnt;
-  document.getElementById('fcPinCount').textContent=cnt+' \u0646\u0642\u0637\u0629';
-  const log=document.getElementById('fcGLog');
-  const d=document.createElement('div');d.className=manual?'gm':'ge';
-  d.textContent='['+(manual?'\u{1F4CD}':'\u23F1')+' #'+cnt+'] '+pt.lat+', '+pt.lng+'  \xB1'+pt.accuracy+'m';
-  log.appendChild(d);log.scrollTop=log.scrollHeight;
-}
-function fcSetDot(state,txt){
-  const d=document.getElementById('fcGDot');
-  d.className='dot'+(state==='on'?' on':state==='err'?' err':'');
-  document.getElementById('fcGTxt').textContent=txt;
-}
-
-// ── Field check — reference file ──────────────────────
-function fcHandleDropRef(e){
-  e.preventDefault();
-  document.getElementById('fcDropRef').classList.remove('drag');
-  const f=e.dataTransfer.files[0];if(f)fcOnRefFile(f);
-}
-
-async function fcOnRefFile(f){
-  if(!f)return;
-  fcRefFile=f;fcRefPlates=[];
-  fcSetPlateLookupState('','اكتب لوحة واضغط فحص');
-  document.getElementById('fcRefFname').textContent='\u{1F4CE} '+f.name;
-  document.getElementById('fcRemoveRefBtn').classList.add('show');
-  document.getElementById('fcRefCol').innerHTML='<option value="">اختر عموداً…</option>';
-  document.getElementById('fcRefColBadge').className='detect-badge pending';
-  document.getElementById('fcRefColBadge').textContent='\u2014';
-  fcShowRefStatus('proc','\u062C\u0627\u0631\u064A \u0642\u0631\u0627\u0621\u0629 \u0627\u0644\u0623\u0639\u0645\u062F\u0629 \u2026',true);
-  try{
-    const fd=new FormData();
-    fd.append('small_file',f);
-    const res=await fetch('/api/check-headers',{method:'POST',body:fd});
-    if(!res.ok)throw new Error('\u0641\u0634\u0644 \u0642\u0631\u0627\u0621\u0629 \u0627\u0644\u0645\u0644\u0641');
-    const data=await res.json();
-    const sel=document.getElementById('fcRefCol');
-    const hs=(data.small&&data.small.headers)?data.small.headers.filter(Boolean):[];
-    sel.innerHTML='<option value="">اختر عموداً…</option>';
-    hs.forEach(h=>{
-      const opt=document.createElement('option');
-      opt.value=h;
-      opt.textContent=h;
-      sel.appendChild(opt);
-    });
-    if(data.small&&!data.small.error&&data.small.detected){
-      document.getElementById('fcRefCol').value=data.small.detected;
-      document.getElementById('fcRefColBadge').className='detect-badge found';
-      document.getElementById('fcRefColBadge').textContent='\u2714 \u062A\u0644\u0642\u0627\u0626\u064A';
-      fcShowRefStatus('ok','\u2714 \u062A\u0645 \u0627\u0643\u062A\u0634\u0627\u0641 \u0627\u0644\u0639\u0645\u0648\u062F: '+data.small.detected);
-    }else if(data.small&&data.small.error){
-      fcShowRefStatus('err',data.small.error);
-      document.getElementById('fcRefColBadge').className='detect-badge notfound';
-      document.getElementById('fcRefColBadge').textContent='\u26A0 \u062E\u0637\u0623';
-    }else if(data.small&&data.small.headers&&data.small.headers.length){
-      const hs=data.small.headers.filter(Boolean);
-      fcShowRefStatus('warn','\u0644\u0645 \u064A\u064F\u0643\u062A\u0634\u0641 \u0627\u0644\u0639\u0645\u0648\u062F \u062A\u0644\u0642\u0627\u0626\u064A\u0627\u064B \u2014 \u0623\u062F\u062E\u0644\u0647 \u064A\u062F\u0648\u064A\u0627\u064B \u0623\u0648 \u0627\u062E\u062A\u0631 \u0645\u0646 \u0627\u0644\u0642\u0627\u0626\u0645\u0629: '+hs.join(' \u00B7 '));
-      document.getElementById('fcRefColBadge').className='detect-badge notfound';
-      document.getElementById('fcRefColBadge').textContent='\u061F \u064A\u062F\u0648\u064A';
-    }else{
-      fcShowRefStatus('warn','\u0644\u0645 \u064A\u064F\u0643\u062A\u0634\u0641 \u0627\u0644\u0639\u0645\u0648\u062F \u062A\u0644\u0642\u0627\u0626\u064A\u0627\u064B \u2014 \u0623\u062F\u062E\u0644\u0647 \u064A\u062F\u0648\u064A\u0627\u064B');
-      document.getElementById('fcRefColBadge').className='detect-badge notfound';
-      document.getElementById('fcRefColBadge').textContent='\u061F \u064A\u062F\u0648\u064A';
-    }
-  }catch(e){fcShowRefStatus('err','\u062E\u0637\u0623 \u0641\u064A \u0642\u0631\u0627\u0621\u0629 \u0627\u0644\u0645\u0644\u0641: '+e.message);}
-  fcCheckReady();
-}
-
-function fcRemoveRefFile(){
-  fcRefFile=null;fcRefPlates=[];
-  fcSetPlateLookupState('','اكتب لوحة واضغط فحص');
-  document.getElementById('fcRefFname').textContent='';
-  document.getElementById('fcRemoveRefBtn').classList.remove('show');
-  document.getElementById('fcRefIn').value='';
-  document.getElementById('fcRefCol').innerHTML='<option value="">اختر عموداً…</option>';
-  document.getElementById('fcRefColBadge').className='detect-badge pending';
-  document.getElementById('fcRefColBadge').textContent='\u2014';
-  document.getElementById('fcRefStatus').className='status';
-  fcCheckReady();
-}
-
-function fcShowRefStatus(t,txt,spin){
-  spin=spin||false;
-  const bar=document.getElementById('fcRefStatus');
-  bar.className='status '+(t==='proc'?'proc':t==='ok'?'ok':t==='warn'?'warn':'err');
-  document.getElementById('fcRefSpin').style.display=spin?'block':'none';
-  document.getElementById('fcRefStatusTxt').textContent=txt;
-}
-
-function fcSetPlateLookupState(state,msg){
-  const box=document.getElementById('fcPlateLookupState');
-  const input=document.getElementById('fcPlateLookupInput');
-  if(!box||!input)return;
-  box.className='fc-plate-check-state'+(state==='ok'?' ok':state==='bad'?' bad':state==='proc'?' proc':'');
-  input.classList.remove('state-ok','state-bad');
-  if(state==='ok')input.classList.add('state-ok');
-  if(state==='bad')input.classList.add('state-bad');
-  box.textContent=msg||'';
-}
-
-function fcResetPlateLookupUI(){
-  const input=document.getElementById('fcPlateLookupInput');
-  if(!input)return;
-  const val=input.value.trim();
-  if(!val){
-    fcSetPlateLookupState('', 'اكتب لوحة واضغط فحص');
-    return;
-  }
-  fcSetPlateLookupState('', 'جاهز للفحص');
-}
-
-async function fcCheckSinglePlate(){
-  const input=document.getElementById('fcPlateLookupInput');
-  const btn=document.getElementById('fcPlateLookupBtn');
-  if(!input||!btn)return;
-  const plate=input.value.trim();
-  if(!plate){
-    fcSetPlateLookupState('bad','أدخل رقم اللوحة أولاً');
-    return;
-  }
-  if(!fcRefFile){
-    fcSetPlateLookupState('bad','ارفع ملف المرجع أولاً');
-    return;
-  }
-  fcSetPlateLookupState('proc','جاري الفحص ...');
-  btn.disabled=true;
-  try{
-    const fd=new FormData();
-    fd.append('file',fcRefFile);
-    fd.append('plate',plate);
-    const col=document.getElementById('fcRefCol').value.trim();
-    if(col)fd.append('col',col);
-    const res=await fetch('/api/check-ref-plate',{method:'POST',body:fd});
-    const data=await res.json().catch(()=>({}));
-    if(!res.ok){
-      throw new Error(data.detail||res.statusText||'فشل فحص اللوحة');
-    }
-    if(data.exists){
-      fcSetPlateLookupState('ok','✅ اللوحة موجودة في الشيت');
-    }else{
-      fcSetPlateLookupState('bad','❌ اللوحة غير موجودة في الشيت');
-    }
-  }catch(e){
-    fcSetPlateLookupState('bad','خطأ: '+(e.message||'تعذّر الفحص'));
-  }finally{
-    btn.disabled=false;
-  }
-}
-
-// ── Field check — ready state ──────────────────────────
-function fcCheckReady(){
-  const hasBlob=!!fcLiveBlob;
-  const hasModel=(typeof getUserRestModel==='function'&&getUserRestModel().length>1);
-  const btn=document.getElementById('fcCheckInline');
-  if(btn){btn.disabled=!(hasBlob&&hasModel);btn.style.opacity=(hasBlob&&hasModel)?'1':'0.35';}
-}
-
 function normPlate(s){
   s=String(s||'').trim();
   s=s.replace(/[\s\u200b\u200c\u200d\ufeff]+/g,'');
@@ -3276,314 +3003,9 @@ function normPlate(s){
   return s.toLowerCase();
 }
 
-function fcMidLatLngStr(points){
-  if(!points||!points.length) return null;
-  const midIdx=Math.floor((points.length-1)/2);
-  const p=points[midIdx];
-  if(!p||p.lat==null||p.lng==null) return null;
-  return String(p.lat)+','+String(p.lng);
-}
-
-function fcParseLatLng(gpsStr){
-  if(!gpsStr) return null;
-  const s=String(gpsStr).trim();
-  if(!s.includes(',')) return null;
-  const parts=s.split(',');
-  if(parts.length<2) return null;
-  const lat=parseFloat(parts[0].trim());
-  const lng=parseFloat(parts[1].trim());
-  if(!Number.isFinite(lat)||!Number.isFinite(lng)) return null;
-  return {lat,lng};
-}
-
-function fcBuildGoogleMapsDirUrl(originLatLngStr, destLatLngStr){
-  const o=fcParseLatLng(originLatLngStr);
-  const d=fcParseLatLng(destLatLngStr);
-  if(!o||!d) return '';
-  return 'https://www.google.com/maps/dir/'+o.lat+','+o.lng+'/'+d.lat+','+d.lng;
-}
-
-async function fcDoCheck(){
-  if(!fcLiveBlob){fcShowStatus('err','لا يوجد تسجيل — سجّل صوتاً أولاً');return;}
-  if(!getUserRestModel()){fcShowStatus('err','لا يوجد موديل REST مفعّل على الخادم — أضفه من صفحة Admin.');return;}
-
-  document.getElementById('fcCheckInline').disabled=true;
-
-  fcShowStatus('proc','جاري تفريغ الصوت …',true);
-  const fd=new FormData();
-  const ext=audioBlobExt(fcLiveBlob);
-  fd.append('audio',fcLiveBlob,'recording.'+ext);
-  fd.append('gps_data',JSON.stringify(fcGpsPoints));
-  fd.append('model_name',getUserRestModel());
-  fd.append('recorder_name',document.getElementById('fcRecorderName').value.trim());
-  fd.append('sheet_name',document.getElementById('fcSheetName').value.trim()||'التشيك الميداني');
-
-  let newRows=[];
-  try{
-    const res=await fetch('/api/process',{method:'POST',body:fd});
-    if(!res.ok){
-      const err=await res.json().catch(()=>({detail:res.statusText}));
-      throw new Error(err.detail||res.statusText);
-    }
-    const start=await res.json();
-    const jobId=start.job_id;
-    if(!jobId) throw new Error('لم يُرجع job_id');
-    const data=await pollTranscribeStatus(jobId);
-    newRows=Array.isArray(data.plates)?data.plates:[];
-    fcShowStatus('proc','تم التسجيل — استُخرج '+newRows.length+' لوحة. جاري التشيك …',true);
-  }catch(rawErr){
-    fcShowStatus('err',friendlyError(rawErr.message));
-    document.getElementById('fcCheckInline').disabled=false;
-    return;
-  }
-
-  if(!Array.isArray(fcAllRows)) fcAllRows=[];
-  if(!Array.isArray(newRows)) newRows=[];
-  fcAllRows=[...fcAllRows,...newRows];
-  fcExtractedRows=newRows;
-  fcLastMyLatLng = fcMidLatLngStr(fcGpsPoints);
-  saveFcData();
-  fcRenderExtracted();
-  document.getElementById('fcExtractedSection').style.display='';
-  document.getElementById('fcAllCount').textContent=fcAllRows.length+' لوحة';
-
-  if(!fcRefFile){
-    fcShowStatus('ok','✔ تم التسجيل — '+newRows.length+' لوحة (لا يوجد ملف مرجعي للمطابقة)');
-    document.getElementById('fcResultSection').style.display='none';
-    document.getElementById('fcCheckInline').disabled=false;
-    fcResetRecUI();
-    return;
-  }
-
-  try{
-    const fd2=new FormData();fd2.append('file',fcRefFile);
-    const col=document.getElementById('fcRefCol').value.trim();if(col)fd2.append('col',col);
-    const res2=await fetch('/api/parse-ref-plates',{method:'POST',body:fd2});
-    const d2=await res2.json();
-    if(!res2.ok){
-      const hint=d2.headers?'الأعمدة المتاحة: '+d2.headers.join(' | '):'';
-      fcShowStatus('warn','تم التسجيل لكن فشل قراءة ملف المرجع'+(hint?' — '+hint:''));
-      document.getElementById('fcCheckInline').disabled=false;
-      fcResetRecUI();
-      return;
-    }
-    fcRefPlates=Array.isArray(d2.plates)?d2.plates:[];
-  }catch(e){
-    fcShowStatus('warn','تم التسجيل لكن فشل قراءة ملف المرجع: '+e.message);
-    document.getElementById('fcCheckInline').disabled=false;
-    fcResetRecUI();
-    return;
-  }
-
-  const refSet=new Set(fcRefPlates.map(normPlate));
-  fcMatchedRows=newRows.filter(r=>refSet.has(normPlate(r.full_plate||'')));
-  const unmatched=newRows.length-fcMatchedRows.length;
-
-  document.getElementById('fcMatchedCount').textContent=fcMatchedRows.length;
-  document.getElementById('fcUnmatchedCount').textContent=unmatched;
-  document.getElementById('fcTotalCount').textContent=newRows.length;
-  fcRenderMatched();
-  saveFcData();
-  document.getElementById('fcResultSection').style.display='';
-
-  if(fcMatchedRows.length===0)
-    fcShowStatus('warn','تم التسجيل — لا توجد تطابقات في هذه الجلسة');
-  else
-    fcShowStatus('ok','✅ '+fcMatchedRows.length+' لوحة مطابقة من أصل '+newRows.length+' — إجمالي مسجّل: '+fcAllRows.length);
-
-  document.getElementById('fcCheckInline').disabled=false;
-  fcResetRecUI();
-}
-
-function fcResetRecUI(){
-  fcLiveBlob=null;fcAllChunks=[];fcGpsPoints=[];fcRecSecs=0;fcRecState='idle';
-  document.getElementById('fcRecChoices').classList.remove('show');
-  document.getElementById('fcRecLbl').textContent='اضغط للتسجيل جديد';
-  document.getElementById('fcGCnt').textContent='0';
-  document.getElementById('fcPinCount').textContent='0 نقطة';
-  document.getElementById('fcTimer').classList.remove('on');
-  document.getElementById('fcRecProgress').classList.remove('on');
-  document.getElementById('fcGLog').innerHTML='<span>سيبدأ تسجيل الإحداثيات مع بدء التسجيل …</span>';
-  fcCheckReady();
-}
-
-function fcRenderExtracted(){
-  const body=document.getElementById('fcExtractedBody');body.innerHTML='';
-  fcAllRows.forEach((row,i)=>{
-    const tr=document.createElement('tr');
-    tr.innerHTML=
-      '<td class="td-plate">'+esc(row.full_plate||'')+'</td>'+
-      '<td class="td-gps">'+esc(row.gps||'—')+'</td>'+
-      '<td style="font-family:var(--mono);font-size:.78rem">'+esc(row.recording_date||'')+'</td>'+
-      '<td>'+esc(row.street_name||'')+'</td>'+
-      '<td class="td-locdetails" style="font-size:.78rem;color:var(--dim2)">'+esc(row.location_details||'')+'</td>'+
-      '<td>'+esc(row.vehicle_type||'')+'</td>'+
-      '<td>'+esc(row.recorder_name||'')+'</td>'+
-      '<td class="td-gps">'+esc(streetLocForRow(row)||'—')+'</td>';
-    body.appendChild(tr);
-  });
-  const cnt=fcAllRows.length+' لوحة';
-  document.getElementById('fcRowCount').textContent=cnt;
-  document.getElementById('fcAllCount').textContent=cnt;
-}
-
-function fcRenderMatched(){
-  const body=document.getElementById('fcMatchedBody');body.innerHTML='';
-  const originLatLngStr = fcLastMyLatLng;
-  fcMatchedRows.forEach((row,i)=>{
-    const tr=document.createElement('tr');
-    const gps=String(row.gps||'').trim();
-    const mapsUrl = (originLatLngStr && gps) ? fcBuildGoogleMapsDirUrl(originLatLngStr, gps) : '';
-    const mapCell = mapsUrl
-      ? '<a class="maps-link" href="'+mapsUrl+'" target="_blank" rel="noopener">&#x1F5FA;&#xFE0F; فتح الخريطة</a>'
-      : '—';
-    tr.innerHTML=
-      '<td><span class="td-plate matched">'+esc(row.full_plate||'')+'</span></td>'+
-      '<td>'+mapCell+'</td>'+
-      '<td class="td-gps">'+esc(gps||'—')+'</td>'+
-      '<td style="font-family:var(--mono);font-size:.78rem">'+esc(row.recording_date||'')+'</td>'+
-      '<td>'+esc(row.street_name||'')+'</td>'+
-      '<td class="td-locdetails" style="font-size:.78rem;color:var(--dim2)">'+esc(row.location_details||'')+'</td>'+
-      '<td>'+esc(row.vehicle_type||'')+'</td>'+
-      '<td>'+esc(row.recorder_name||'')+'</td>'+
-      '<td class="td-gps">'+esc(streetLocForRow(row)||'—')+'</td>';
-    body.appendChild(tr);
-  });
-}
-
-async function fcExportAllExcel(){
-  if(!fcAllRows.length){fcShowStatus('err','لا توجد لوحات مسجّلة بعد');return;}
-  const sheetName=document.getElementById('fcSheetName').value.trim()||'التشيك الميداني';
-  fcShowStatus('proc','جاري إنشاء ملف Excel …',true);
-  try{
-    const fd=new FormData();
-    fd.append('rows_json',JSON.stringify(fcAllRows));
-    fd.append('sheet_name',sheetName);
-    const res=await fetch('/api/export-excel',{method:'POST',body:fd});
-    if(!res.ok){const err=await res.json().catch(()=>({detail:res.statusText}));throw new Error(err.detail||res.statusText);}
-    triggerDownload(await res.blob(),'كل_اللوحات_'+new Date().toISOString().slice(0,10)+'.xlsx');
-    fcShowStatus('ok','✔ تم تحميل ملف كل اللوحات');
-  }catch(e){fcShowStatus('err','خطأ في التصدير: '+e.message);}
-}
-
-async function fcExportMatchedExcel(){
-  if(!fcMatchedRows.length){fcShowStatus('err','لا توجد لوحات مطابقة للتصدير');return;}
-  const sheetName=document.getElementById('fcSheetName').value.trim()||'التشيك الميداني';
-  fcShowStatus('proc','جاري إنشاء ملف Excel …',true);
-  try{
-    const fd=new FormData();
-    fd.append('rows_json',JSON.stringify(fcMatchedRows));
-    fd.append('sheet_name',sheetName);
-    const res=await fetch('/api/export-field-check',{method:'POST',body:fd});
-    if(!res.ok){const err=await res.json().catch(()=>({detail:res.statusText}));throw new Error(err.detail||res.statusText);}
-    triggerDownload(await res.blob(),'اللوحات_المطابقة_'+new Date().toISOString().slice(0,10)+'.xlsx');
-    fcShowStatus('ok','✔ تم تحميل ملف اللوحات المطابقة');
-  }catch(e){fcShowStatus('err','خطأ في التصدير: '+e.message);}
-}
-
-// ── Field check — persistence ──────────────────────────
-function fcClearAll(){
-  if(!fcAllRows.length)return;
-  if(!confirm('هل تريد مسح كل اللوحات المسجّلة؟'))return;
-  fcAllRows=[];fcExtractedRows=[];fcMatchedRows=[];
-  fcLastMyLatLng=null;
-  saveFcData();
-  document.getElementById('fcExtractedSection').style.display='none';
-  document.getElementById('fcResultSection').style.display='none';
-  fcShowStatus('ok','تم المسح');
-}
-
-async function fcImportExcel(f){
-  if(!f)return;
-  fcShowStatus('proc','جاري قراءة الملف …',true);
-  try{
-    const fd=new FormData();fd.append('file',f);
-    const res=await fetch('/api/parse-excel',{method:'POST',body:fd});
-    if(!res.ok){const err=await res.json().catch(()=>({detail:res.statusText}));throw new Error(err.detail||res.statusText);}
-    const data=await res.json();
-    const fcRows=Array.isArray(data.rows)?data.rows:[];
-    if(!Array.isArray(fcAllRows)) fcAllRows=[];
-    fcAllRows=[...fcAllRows,...fcRows];
-    saveFcData();fcRenderExtracted();
-    document.getElementById('fcExtractedSection').style.display='';
-    document.getElementById('fcAllCount').textContent=fcAllRows.length+' لوحة';
-    fcShowStatus('ok','✔ تم استيراد '+data.total+' صف — الإجمالي: '+fcAllRows.length+' لوحة');
-  }catch(e){fcShowStatus('err','خطأ في الاستيراد: '+e.message);}
-  document.getElementById('fcXlsIn').value='';
-}
-
-async function fcCheckAll(){
-  if(!fcAllRows.length){fcShowStatus('err','لا توجد لوحات مسجّلة بعد — سجّل أو ارفع Excel أولاً');return;}
-  if(!fcRefFile){fcShowStatus('err','ارفع ملف المرجع أولاً (الخطوة 1)');return;}
-  fcShowStatus('proc','جاري تشيك كل اللوحات المسجّلة …',true);
-  try{
-    const fd=new FormData();fd.append('file',fcRefFile);
-    const col=document.getElementById('fcRefCol').value.trim();if(col)fd.append('col',col);
-    const res=await fetch('/api/parse-ref-plates',{method:'POST',body:fd});
-    const d=await res.json();
-    if(!res.ok){
-      const hint=d.headers?'الأعمدة المتاحة: '+d.headers.join(' | '):'';
-      fcShowStatus('err',(d.detail||'خطأ في قراءة الملف')+(hint?' — '+hint:''));return;
-    }
-    fcRefPlates=Array.isArray(d.plates)?d.plates:[];
-    if(!fcRefPlates.length){fcShowStatus('warn','الملف المرجعي لا يحتوي على لوحات');return;}
-  }catch(e){fcShowStatus('err','خطأ في قراءة ملف المرجع: '+e.message);return;}
-  const refSet=new Set(fcRefPlates.map(normPlate));
-  fcMatchedRows=fcAllRows.filter(r=>refSet.has(normPlate(r.full_plate||'')));
-  const unmatched=fcAllRows.length-fcMatchedRows.length;
-  document.getElementById('fcMatchedCount').textContent=fcMatchedRows.length;
-  document.getElementById('fcUnmatchedCount').textContent=unmatched;
-  document.getElementById('fcTotalCount').textContent=fcAllRows.length;
-  const ptitle=document.querySelector('#fcResultSection .ptitle.green');
-  if(ptitle)ptitle.innerHTML='&#x2705; نتائج التشيك &mdash; مطابقة كل اللوحات المسجّلة';
-  fcRenderMatched();saveFcData();
-  document.getElementById('fcResultSection').style.display='';
-  if(fcMatchedRows.length===0)
-    fcShowStatus('warn','لا توجد تطابقات بين اللوحات المسجّلة والملف المرجعي');
-  else
-    fcShowStatus('ok','✅ '+fcMatchedRows.length+' لوحة مطابقة من أصل '+fcAllRows.length+' مسجّلة');
-}
-function saveFcData(){
-  try{
-    if(!Array.isArray(fcAllRows)) fcAllRows=[];
-    if(!Array.isArray(fcMatchedRows)) fcMatchedRows=[];
-    if(!Array.isArray(fcExtractedRows)) fcExtractedRows=[];
-    localStorage.setItem('fcAllRows_v5',JSON.stringify(fcAllRows));
-    localStorage.setItem('fcMatchedRows_v5',JSON.stringify(fcMatchedRows));
-    localStorage.setItem('fcExtractedRows_v5',JSON.stringify(fcExtractedRows));
-    localStorage.setItem('fcLastMyLatLng_v5',fcLastMyLatLng||'');
-  }catch(e){}
-}
-function loadFcData(){
-  if(!document.getElementById('fcExtractedSection')) return;
-  try{
-    const al=localStorage.getItem('fcAllRows_v5');
-    const ex=localStorage.getItem('fcExtractedRows_v5');
-    const mx=localStorage.getItem('fcMatchedRows_v5');
-    const ml=localStorage.getItem('fcLastMyLatLng_v5');
-    if(al){const p=JSON.parse(al);fcAllRows=Array.isArray(p)?p:[];}
-    if(ex){const p=JSON.parse(ex);fcExtractedRows=Array.isArray(p)?p:[];}
-    if(mx){const p=JSON.parse(mx);fcMatchedRows=Array.isArray(p)?p:[];}
-    fcLastMyLatLng = ml ? String(ml) : null;
-    if(fcAllRows.length){
-      fcRenderExtracted();
-      document.getElementById('fcExtractedSection').style.display='';
-      document.getElementById('fcAllCount').textContent=fcAllRows.length+' لوحة';
-    }
-    if(fcMatchedRows.length){
-      document.getElementById('fcMatchedCount').textContent=fcMatchedRows.length;
-      document.getElementById('fcUnmatchedCount').textContent=fcExtractedRows.length-fcMatchedRows.length;
-      document.getElementById('fcTotalCount').textContent=fcExtractedRows.length;
-      fcRenderMatched();document.getElementById('fcResultSection').style.display='';
-    }
-    fcCheckReady();
-  }catch(e){}
-}
-
 // ── Status helpers ────────────────────────────────────
 function showStatus(type,txt,spin=false){const bar=document.getElementById('statusBar');bar.className='status '+(type==='proc'?'proc':type==='ok'?'ok':'err');document.getElementById('spin').style.display=spin?'block':'none';document.getElementById('statusTxt').textContent=txt;if(type!=='proc')setTimeout(()=>{bar.className='status';},7000);}
 function showCheckStatus(type,txt,spin=false){const bar=document.getElementById('checkStatus');bar.className='status '+(type==='proc'?'proc':type==='ok'?'ok':type==='warn'?'warn':'err');document.getElementById('checkSpin').style.display=spin?'block':'none';document.getElementById('checkStatusTxt').textContent=txt;if(type!=='proc')setTimeout(()=>{bar.className='status';},9000);}
-function fcShowStatus(type,txt,spin=false){const bar=document.getElementById('fcStatusBar');if(!bar)return;const sp=document.getElementById('fcSpin'),tx=document.getElementById('fcStatusTxt');if(!sp||!tx)return;bar.className='status '+(type==='proc'?'proc':type==='ok'?'ok':type==='warn'?'warn':'err');sp.style.display=spin?'block':'none';tx.textContent=txt;if(type!=='proc')setTimeout(()=>{bar.className='status';},9000);}
 // ── Utils ─────────────────────────────────────────────
 function triggerDownload(blob,filename){const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(url),3000);}
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
@@ -3837,7 +3259,7 @@ function applyAdminNavVisibility(){
       const ap=document.getElementById('pageAdmin'); if(ap) ap.style.display='';
       ['navTafrigh','navField','navCheck','navGmaps','navAdmin'].forEach(id=>{const b=document.getElementById(id); if(b) b.classList.remove('active');});
       const nb=document.getElementById('navAdmin'); if(nb) nb.classList.add('active');
-      if(typeof window.adminLoadUsers==='function') window.adminLoadUsers();
+      if(typeof window.adminRefreshUserAdminPanel==='function') window.adminRefreshUserAdminPanel();
       try{ if(typeof refreshUserGeminiModels==='function') void refreshUserGeminiModels(); }catch(_){}
       if(typeof window.adminLoadGeminiModelsAdmin==='function') window.adminLoadGeminiModelsAdmin();
       if(typeof window.adminLoadKeyPools==='function') window.adminLoadKeyPools();
@@ -3847,20 +3269,28 @@ function applyAdminNavVisibility(){
     if(typeof oldSwitch==='function') return oldSwitch(p);
   }
 
+  window._adminSelectedGroupId=null;
   window.adminLoadGroups=async function(){
-    const tb=document.getElementById('adminGroupsBody');
     const sel=document.getElementById('admNewGroupId');
+    const pick=document.getElementById('admGroupPick');
+    const gDetail=document.getElementById('admGroupDetail');
+    const gInner=document.getElementById('admGroupDetailInner');
     try{
       const r=await fetch('/admin/groups');
       const j=await r.json().catch(()=>[]);
       if(!r.ok) throw new Error('فشل تحميل المجموعات');
       window._adminGroupsCache=j||[];
-      if(tb){
-        tb.innerHTML=(j||[]).map(function(g){
-          var used=Number(g.used_stored_large_rows||0);
-          var lim=(g.max_stored_large_rows==null?'—':String(g.max_stored_large_rows));
-          return '<tr><td>'+g.id+'</td><td>'+(typeof esc==='function'?esc(String(g.name)):String(g.name))+'</td><td><span style="font-family:var(--mono)">'+String(used)+'</span></td><td><span style="font-family:var(--mono)">'+lim+'</span></td><td style="white-space:nowrap"><button type="button" class="tb-btn outline" style="padding:.2rem .4rem;font-size:.65rem;margin-left:4px" onclick="adminUpdateGroupRowsLimit('+g.id+','+Number(g.max_stored_large_rows||0)+')">تعديل الحد</button><button type="button" class="tb-btn danger" style="padding:.2rem .4rem;font-size:.65rem" onclick="adminDeleteGroup('+g.id+')">حذف</button></td></tr>';
-        }).join('')||'<tr><td colspan="5" style="color:var(--dim2)">لا مجموعات</td></tr>';
+      if(pick){
+        const prev=pick.value?String(pick.value):'';
+        pick.innerHTML='<option value="">— اختر —</option>';
+        (j||[]).forEach(function(g){
+          var o=document.createElement('option');
+          o.value=String(g.id);
+          o.textContent=String(g.id)+' — '+(g.name||'');
+          pick.appendChild(o);
+        });
+        var still=(j||[]).some(function(x){ return String(x.id)===prev; });
+        pick.value=still?prev:'';
       }
       if(sel){
         const cur=sel.value;
@@ -3869,11 +3299,75 @@ function applyAdminNavVisibility(){
         }).join('');
         if(cur) sel.value=cur;
       }
+      if(pick&&pick.value){
+        await window.adminLoadGroupDetail(parseInt(pick.value,10));
+      }else{
+        window._adminSelectedGroupId=null;
+        if(gDetail) gDetail.style.display='none';
+        if(gInner) gInner.innerHTML='';
+      }
       return j;
     }catch(e){
-      if(tb) tb.innerHTML='<tr><td colspan="3" style="color:var(--red)">'+(e.message||'')+'</td></tr>';
+      if(gInner){ gInner.innerHTML='<p style="color:var(--red)">'+(e.message||'فشل')+'</p>'; }
+      if(gDetail){ gDetail.style.display=''; }
       return [];
     }
+  };
+  window.adminOnGroupPickChange=async function(){
+    const pick=document.getElementById('admGroupPick');
+    if(!pick||!pick.value){
+      window._adminSelectedGroupId=null;
+      var gd=document.getElementById('admGroupDetail');
+      if(gd) gd.style.display='none';
+      return;
+    }
+    await window.adminLoadGroupDetail(parseInt(pick.value,10));
+  };
+  window.adminLoadGroupDetail=async function(gid){
+    const inner=document.getElementById('admGroupDetailInner');
+    const box=document.getElementById('admGroupDetail');
+    const m=document.getElementById('adminMsg');
+    if(!inner||!box) return;
+    try{
+      const r=await fetch('/admin/groups/'+gid);
+      const d=await r.json().catch(()=>({}));
+      if(!r.ok) throw new Error(d.detail||'فشل تحميل المجموعة');
+      window._adminSelectedGroupId=gid;
+      inner.innerHTML=window._adminRenderGroupDetailHtml(d);
+      box.style.display='';
+    }catch(e){
+      inner.innerHTML='<p style="color:var(--red)">'+(e.message||'فشل')+'</p>';
+      box.style.display='';
+      if(m){ m.style.color='var(--red)'; m.textContent=e.message||''; }
+    }
+  };
+  window._adminRenderGroupDetailHtml=function(d){
+    var escFn=(typeof esc==='function')?esc:function(s){ return String(s); };
+    var th='style="text-align:right;white-space:nowrap;padding:.4rem .45rem;border:1px solid var(--brd2);background:var(--s2);color:var(--dim2);font-weight:700;font-size:.7rem;width:1%"';
+    var td='style="padding:.4rem .5rem;border:1px solid var(--brd2);font-size:.72rem;vertical-align:middle"';
+    var thm='style="text-align:right;padding:.35rem .4rem;border:1px solid var(--brd2);background:var(--s2);font-size:.68rem;font-weight:700"';
+    function row4(l1,v1,l2,v2){
+      return '<tr><th scope="row" '+th+'>'+l1+'</th><td '+td+'>'+v1+'</td><th scope="row" '+th+'>'+l2+'</th><td '+td+'>'+v2+'</td></tr>';
+    }
+    var lim=d.max_stored_large_rows==null?'—':String(d.max_stored_large_rows);
+    var meta='<table dir="rtl" style="width:100%;max-width:820px;border-collapse:collapse;table-layout:fixed;margin:0 0 .65rem">'+
+      '<colgroup><col style="width:22%"/><col style="width:28%"/><col style="width:22%"/><col style="width:28%"/></colgroup><tbody>'+
+      row4('معرف المجموعة',String(d.id),'اسم المجموعة',escFn(String(d.name||'')))+
+      row4('حد الصفوف المشترك',lim,'الصفوف المستخدمة (إجمالي)',String(d.used_stored_large_rows||0))+
+      '<tr><th scope="row" '+th+'>عدد الأعضاء</th><td colspan="3" '+td+'><strong>'+String(d.member_count||0)+'</strong></td></tr>'+
+      '</tbody></table>';
+    var rows=(d.members||[]).map(function(m){
+      var dev=m.device_id?escFn(String(m.device_id)):'—';
+      var act=m.is_active===false?'لا':'نعم';
+      var mdn=(m.display_name&&String(m.display_name).trim())?escFn(String(m.display_name).trim()):'—';
+      return '<tr><td '+td+'>'+m.id+'</td><td '+td+'>'+escFn(m.username)+'</td><td '+td+'>'+mdn+'</td><td '+td+'>'+(m.is_admin?'نعم':'لا')+'</td><td '+td+'>'+act+'</td><td '+td+' style="word-break:break-all;font-size:.68rem;font-family:var(--mono)">'+dev+'</td><td '+td+'>'+String(m.used_stored_large_rows||0)+'</td><td '+td+'>'+(m.max_stored_large_rows==null?'—':String(m.max_stored_large_rows))+'</td></tr>';
+    }).join('');
+    var memb='<h3 style="margin:.55rem 0 .4rem;font-size:.84rem">الأعضاء</h3>'+
+      (rows?'<table dir="rtl" style="width:100%;max-width:900px;border-collapse:collapse;font-size:.72rem"><thead><tr><th '+thm+'>ID</th><th '+thm+'>المستخدم</th><th '+thm+'>الاسم (أدمن)</th><th '+thm+'>أدمن</th><th '+thm+'>نشط</th><th '+thm+'>Device</th><th '+thm+'>صفوف مستخدمة</th><th '+thm+'>حد المستخدم</th></tr></thead><tbody>'+rows+'</tbody></table>':'<p style="color:var(--dim2);font-size:.74rem;margin:0">لا يوجد أعضاء في هذه المجموعة.</p>');
+    var btns='<div style="display:flex;flex-wrap:wrap;gap:.45rem;margin-top:.4rem">'+
+      '<button type="button" class="tb-btn outline" style="font-size:.7rem" onclick="adminUpdateGroupRowsLimit('+d.id+','+Number(d.max_stored_large_rows||0)+')">تعديل حد المجموعة</button>'+
+      '<button type="button" class="tb-btn danger" style="font-size:.7rem" onclick="adminDeleteGroup('+d.id+')">حذف المجموعة</button></div>';
+    return '<div class="adm-group-detail-wrap" style="max-width:900px">'+meta+memb+btns+'</div>';
   };
 
   window.adminCreateGroup=async function(){
@@ -3902,7 +3396,7 @@ function applyAdminNavVisibility(){
       if(!r.ok) throw new Error(j.detail||'فشل الحذف');
       if(m){ m.style.color='var(--green)'; m.textContent='تم حذف المجموعة'; }
       await window.adminLoadGroups();
-      await window.adminLoadUsers();
+      if(typeof window.adminRefreshUserAdminPanel==='function') await window.adminRefreshUserAdminPanel();
     }catch(e){ if(m){ m.style.color='var(--red)'; m.textContent=e.message||'فشل'; } }
   };
 
@@ -3915,8 +3409,9 @@ function applyAdminNavVisibility(){
       const j=await r.json().catch(()=>({}));
       if(!r.ok) throw new Error(j.detail||'فشل تحديث المجموعة');
       if(m){ m.style.color='var(--green)'; m.textContent='تم تحديث المجموعة'; }
-      await window.adminLoadUsers();
-    }catch(e){ if(m){ m.style.color='var(--red)'; m.textContent=e.message||'فشل'; } await window.adminLoadUsers(); }
+      await window.adminLoadGroups();
+      if(typeof window.adminRefreshUserAdminPanel==='function') await window.adminRefreshUserAdminPanel();
+    }catch(e){ if(m){ m.style.color='var(--red)'; m.textContent=e.message||'فشل'; } await window.adminLoadGroups(); if(typeof window.adminRefreshUserAdminPanel==='function') await window.adminRefreshUserAdminPanel(); }
   };
 
   window.adminUpdateGroupRowsLimit=async function(groupId,current){
@@ -3931,11 +3426,16 @@ function applyAdminNavVisibility(){
       if(!r.ok) throw new Error(j.detail||'فشل تحديث الحد');
       if(m){ m.style.color='var(--green)'; m.textContent='تم تحديث حد المجموعة'; }
       await window.adminLoadGroups();
+      if(window._adminSelectedGroupId===groupId && typeof window.adminLoadGroupDetail==='function'){
+        await window.adminLoadGroupDetail(groupId);
+      }
     }catch(e){ if(m){ m.style.color='var(--red)'; m.textContent=e.message||'فشل'; } }
   };
 
   window.adminCreateUser=async function(){
     const u=document.getElementById('admNewUser').value.trim();
+    const dispEl=document.getElementById('admNewDisplayName');
+    const disp=dispEl?String(dispEl.value||'').trim().slice(0,200):'';
     const p=document.getElementById('admNewPass').value;
     const isAdmin=document.getElementById('admIsAdmin').checked;
     const limRaw=(document.getElementById('admUserRowsLimit')||{}).value;
@@ -3943,47 +3443,155 @@ function applyAdminNavVisibility(){
     const m=document.getElementById('adminMsg');
     const gsel=document.getElementById('admNewGroupId');
     if(!(userLimit>0)){ m.style.color='var(--red)'; m.textContent='حد صفوف المستخدم مطلوب'; return; }
-    const payload={username:u,password:p,is_admin:isAdmin,max_stored_large_rows:userLimit};
+    const payload={username:u,password:p,display_name:disp,is_admin:isAdmin,max_stored_large_rows:userLimit};
     if(gsel&&gsel.value) payload.group_id=parseInt(gsel.value,10);
     try{
       const r=await fetch('/admin/users',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
       const j=await r.json().catch(()=>({}));
       if(!r.ok) throw new Error(j.detail||'فشل إنشاء المستخدم');
       m.style.color='var(--green)'; m.textContent='تم إنشاء المستخدم';
+      if(dispEl) dispEl.value='';
       await window.adminLoadUsers();
     }catch(e){ m.style.color='var(--red)'; m.textContent=e.message||'فشل'; }
   };
 
-  window.adminLoadUsers=async function(){
-    const body=document.getElementById('adminUsersBody');
+  window._adminSelectedUserId=null;
+  window.adminRefreshUserAdminPanel=async function(){
+    const pick=document.getElementById('admUserPick');
+    const detail=document.getElementById('admUserDetail');
+    const inner=document.getElementById('admUserDetailInner');
     const m=document.getElementById('adminMsg');
     try{
       await window.adminLoadGroups();
-      const groups=window._adminGroupsCache||[];
+      const prev=pick&&pick.value?String(pick.value):'';
       const r=await fetch('/admin/users');
       const j=await r.json().catch(()=>[]);
-      if(!r.ok) throw new Error(j.detail||'فشل تحميل المستخدمين');
-      window._adminUsersCache = j || [];
-      body.innerHTML='';
-      (j||[]).forEach(u=>{
-        const tr=document.createElement('tr');
-        const dev=u.device_id?(typeof esc==='function'?esc(String(u.device_id)):'-'):'-';
-        const un=typeof esc==='function'?esc(u.username):String(u.username);
-        let opts='<option value="">— فردي —</option>';
-        groups.forEach(function(g){
-          const sel=(u.group_id!=null&&Number(u.group_id)===Number(g.id))?' selected':'';
-          opts+='<option value="'+g.id+'"'+sel+'>'+(typeof esc==='function'?esc(String(g.name)):String(g.name))+'</option>';
+      if(!r.ok) throw new Error((j&&j.detail)||'فشل تحميل المستخدمين');
+      window._adminUsersCache=j||[];
+      if(pick){
+        pick.innerHTML='<option value="">— اختر —</option>';
+        (j||[]).forEach(function(u){
+          const o=document.createElement('option');
+          o.value=String(u.id);
+          var lab=(u.display_name&&String(u.display_name).trim())?String(u.display_name).trim():String(u.username||'');
+          o.textContent=String(u.id)+' — '+lab;
+          pick.appendChild(o);
         });
-        tr.innerHTML='<td>'+u.id+'</td><td>'+un+'</td><td>'+(u.is_admin?'yes':'no')+'</td><td>'+(u.is_active===false?'لا':'نعم')+'</td><td style="font-size:.7rem;max-width:140px;overflow:hidden;text-overflow:ellipsis">'+dev+'</td><td><select style="font-size:.68rem;max-width:130px;padding:.2rem" onchange="adminAssignUserGroup('+u.id+',this)">'+opts+'</select></td><td style="font-family:var(--mono);font-size:.68rem">'+String(u.used_stored_large_rows||0)+'</td><td style="font-family:var(--mono);font-size:.68rem">'+(u.max_stored_large_rows==null?'—':String(u.max_stored_large_rows))+'</td><td style="white-space:nowrap">'+
-          '<button type="button" class="tb-btn outline" style="padding:.25rem .45rem;font-size:.68rem;margin-left:4px" onclick="adminUpdateUserRowsLimit('+u.id+','+Number(u.max_stored_large_rows||0)+')">حد الصفوف</button>'+
-          '<button type="button" class="tb-btn outline" style="padding:.25rem .45rem;font-size:.68rem;margin-left:4px" onclick="adminSetActive('+u.id+','+(u.is_active===false?'true':'false')+')">'+(u.is_active===false?'تفعيل':'تعطيل')+'</button>'+
-          '<button type="button" class="tb-btn outline" style="padding:.25rem .45rem;font-size:.68rem;margin-left:4px" onclick="adminResetDevice('+u.id+')">مسح الجهاز</button>'+
-          '<button type="button" class="tb-btn danger" style="padding:.25rem .45rem;font-size:.68rem" onclick="adminDeleteUser('+u.id+')">حذف</button></td>';
-        body.appendChild(tr);
-      });
-      m.style.color='var(--green)'; m.textContent='تم تحميل المستخدمين';
-    }catch(e){ m.style.color='var(--red)'; m.textContent=e.message||'فشل'; }
+        const still=(j||[]).some(function(x){ return String(x.id)===prev; });
+        pick.value=still?prev:'';
+      }
+      if(!pick||!pick.value){
+        window._adminSelectedUserId=null;
+        if(detail) detail.style.display='none';
+        if(inner) inner.innerHTML='';
+      }else{
+        await window.adminLoadUserDetail(parseInt(pick.value,10));
+      }
+      if(m){ m.style.color='var(--green)'; m.textContent='تم تحديث قائمة المستخدمين'; }
+    }catch(e){ if(m){ m.style.color='var(--red)'; m.textContent=e.message||'فشل'; } }
   };
+  window.adminOnUserPickChange=async function(){
+    const pick=document.getElementById('admUserPick');
+    if(!pick||!pick.value){
+      window._adminSelectedUserId=null;
+      const d=document.getElementById('admUserDetail');
+      if(d) d.style.display='none';
+      return;
+    }
+    await window.adminLoadUserDetail(parseInt(pick.value,10));
+  };
+  window.adminLoadUserDetail=async function(uid){
+    const inner=document.getElementById('admUserDetailInner');
+    const detail=document.getElementById('admUserDetail');
+    const m=document.getElementById('adminMsg');
+    if(!inner||!detail) return;
+    try{
+      const r=await fetch('/admin/users/'+uid);
+      const d=await r.json().catch(()=>({}));
+      if(!r.ok) throw new Error(d.detail||'فشل تحميل تفاصيل المستخدم');
+      window._adminSelectedUserId=uid;
+      inner.innerHTML=window._adminRenderUserDetailHtml(d);
+      detail.style.display='';
+    }catch(e){
+      inner.innerHTML='<p style="color:var(--red)">'+(e.message||'فشل')+'</p>';
+      detail.style.display='';
+      if(m){ m.style.color='var(--red)'; m.textContent=e.message||''; }
+    }
+  };
+  window._adminRenderUserDetailHtml=function(d){
+    var escFn=(typeof esc==='function')?esc:function(s){ return String(s); };
+    var act=d.is_active===false?'لا':'نعم';
+    var adm=d.is_admin?'نعم':'لا';
+    var dnLab=(d.display_name&&String(d.display_name).trim())?escFn(String(d.display_name).trim()):'—';
+    var grpOpts='';
+    (window._adminGroupsCache||[]).forEach(function(g){
+      var sel=(d.group_id!=null&&Number(d.group_id)===Number(g.id))?' selected':'';
+      grpOpts+='<option value="'+g.id+'"'+sel+'>'+escFn(String(g.name))+'</option>';
+    });
+    var th='style="text-align:right;white-space:nowrap;padding:.4rem .45rem;border:1px solid var(--brd2);background:var(--s2);color:var(--dim2);font-weight:700;font-size:.7rem;width:1%"';
+    var td='style="padding:.4rem .5rem;border:1px solid var(--brd2);font-size:.72rem;vertical-align:middle"';
+    var tdMono='style="padding:.4rem .5rem;border:1px solid var(--brd2);font-size:.68rem;vertical-align:middle;font-family:var(--mono);word-break:break-all"';
+    function row4(l1,v1,l2,v2,a1,a2){
+      var x1=a1||td, x2=a2||td;
+      return '<tr><th scope="row" '+th+'>'+l1+'</th><td '+x1+'>'+v1+'</td><th scope="row" '+th+'>'+l2+'</th><td '+x2+'>'+v2+'</td></tr>';
+    }
+    var subRows='';
+    if(d.is_admin){
+      subRows='<tr><td colspan="4" '+td+' style="text-align:center;color:var(--dim2)">الاشتراك: غير مطبّق على حساب الأدمن</td></tr>';
+    }else{
+      subRows+=row4('بداية دورة ال٣٠ يوم',escFn(String(d.subscription_cycle_started_at||'—')),'نهاية الدورة',escFn(String(d.subscription_cycle_ends_at||'—')),tdMono,tdMono);
+      subRows+=row4('أيام متبقية (تقريبًا)','<strong>'+String(d.cycle_days_remaining||0)+'</strong> يوم','آخر ٣ أيام سماح؟',d.in_grace_period?'نعم':'لا');
+      if(d.subscription_early_renew_at){
+        subRows+=row4('تجديد مبكر (تأكيد دفع)',escFn(String(d.subscription_early_renew_at)),'ملاحظة','الصلاحية تستمر حتى نهاية الدورة؛ استهلاك Gemini من تاريخ التجديد حتى النهاية يُحسب للشهر التالي',tdMono,td);
+      }
+      if((Number(d.gemini_carryover_cost_usd||0)>0)||(Number(d.gemini_carryover_tokens||0)>0)||(Number(d.gemini_carryover_events||0)>0)){
+        var cU='~$'+Number(d.gemini_carryover_cost_usd||0).toFixed(4)+' · توكنات '+String(d.gemini_carryover_tokens||0)+' · '+String(d.gemini_carryover_events||0)+' حدث';
+        subRows+='<tr><th scope="row" '+th+'>Gemini — مترحّل للشهر التالي</th><td colspan="3" '+td+'>'+cU+'</td></tr>';
+      }
+      subRows+=row4('Gemini — إجمالي التكلفة','~$'+Number(d.gemini_cycle_cost_usd||0).toFixed(4),'Gemini — توكنات / أحداث',String(d.gemini_cycle_tokens||0)+' / '+String(d.gemini_cycle_events||0)+' حدث');
+      var restU='~$'+Number(d.gemini_rest_cost_usd||0).toFixed(4)+' · توكنات '+String(d.gemini_rest_tokens||0)+' · '+String(d.gemini_rest_events||0)+' حدث';
+      var liveU='~$'+Number(d.gemini_live_cost_usd||0).toFixed(4)+' · توكنات '+String(d.gemini_live_tokens||0)+' · '+String(d.gemini_live_events||0)+' حدث';
+      subRows+=row4('REST (تفريغ) — الموديل',escFn(String(d.gemini_rest_models||'—')),'REST — الاستخدام',restU);
+      subRows+=row4('Live (تشيك) — الموديل',escFn(String(d.gemini_live_models||'—')),'Live — الاستخدام',liveU);
+    }
+    var dev=d.device_id?escFn(String(d.device_id)):'—';
+    var tbl='<table dir="rtl" style="width:100%;max-width:820px;border-collapse:collapse;table-layout:fixed;margin:0 0 .65rem">'+
+      '<colgroup><col style="width:22%"/><col style="width:28%"/><col style="width:22%"/><col style="width:28%"/></colgroup>'+
+      '<tbody>'+
+      row4('المعرّف',String(d.id),'اسم الدخول',escFn(d.username))+
+      '<tr><th scope="row" '+th+'>الاسم (للأدمن فقط)</th><td colspan="3" '+td+'>'+dnLab+'</td></tr>'+
+      row4('صلاحيات أدمن',adm,'الحساب نشط',act)+
+      subRows+
+      '<tr><th scope="row" '+th+'>Device</th><td colspan="3" '+tdMono+'>'+dev+'</td></tr>'+
+      '<tr><th scope="row" '+th+'>مجموعة الفرز</th><td colspan="3" '+td+'>'+
+        '<select id="admDetailGroupSel" style="font-size:.72rem;padding:.28rem .4rem;max-width:min(100%,280px);border-radius:6px;border:1px solid var(--brd2)"><option value="">— فردي —</option>'+grpOpts+'</select> '+
+        '<button type="button" class="tb-btn outline" style="font-size:.68rem;padding:.25rem .5rem;margin-inline-start:.35rem" onclick="adminAssignUserGroup('+d.id+',document.getElementById(\'admDetailGroupSel\'))">حفظ المجموعة</button></td></tr>'+
+      row4('صفوف الفرز المستخدمة',String(d.used_stored_large_rows||0),'حد المستخدم',d.max_stored_large_rows==null?'—':String(d.max_stored_large_rows))+
+      '</tbody></table>';
+    var btns='<div style="display:flex;flex-wrap:wrap;gap:.45rem;margin-top:.15rem">'+
+      (d.is_admin?'':'<button type="button" class="tb-btn primary" style="font-size:.7rem" onclick="adminRenewSubscription()">تجديد الاشتراك (مبكر = ترحيل Gemini؛ بعد الانتهاء = شهر جديد)</button>')+
+      '<button type="button" class="tb-btn outline" style="font-size:.7rem" onclick="adminUpdateUserRowsLimit('+d.id+','+Number(d.max_stored_large_rows||0)+')">حد الصفوف</button>'+
+      '<button type="button" class="tb-btn outline" style="font-size:.7rem" onclick="adminSetActive('+d.id+', '+(d.is_active===false)+')">'+(d.is_active===false?'تفعيل':'تعطيل')+'</button>'+
+      '<button type="button" class="tb-btn outline" style="font-size:.7rem" onclick="adminResetDevice('+d.id+')">مسح الجهاز</button>'+
+      '<button type="button" class="tb-btn danger" style="font-size:.7rem" onclick="adminDeleteUser('+d.id+')">حذف المستخدم</button>'+
+      '</div>';
+    return '<div class="adm-user-detail-wrap" style="max-width:840px">'+tbl+btns+'</div>';
+  };
+  window.adminRenewSubscription=async function(){
+    var uid=window._adminSelectedUserId;
+    if(!uid){ return; }
+    if(!confirm('تأكيد الدفع؟\n\n• إن كانت الدورة ما انتهتش: العميل يكمل لحد نهاية ال٣٠ يوم، واستهلاك Gemini من دلوقتي لحد النهاية يترحّل للشهر التالي.\n\n• إن كانت الدورة انتهت: يبدأ شهر جديد من الآن ويُمسح سجل Gemini القديم.')) return;
+    var m=document.getElementById('adminMsg');
+    try{
+      var r=await fetch('/admin/users/'+uid+'/renew-subscription',{method:'POST'});
+      var j=await r.json().catch(()=>({}));
+      if(!r.ok) throw new Error(j.detail||'فشل التجديد');
+      if(m){ m.style.color='var(--green)'; m.textContent='تم تجديد الاشتراك'; }
+      await window.adminRefreshUserAdminPanel();
+      await window.adminLoadUserDetail(uid);
+    }catch(e){ if(m){ m.style.color='var(--red)'; m.textContent=e.message||'فشل'; } }
+  };
+  window.adminLoadUsers=window.adminRefreshUserAdminPanel;
 
   window.adminUpdateUserRowsLimit=async function(userId,current){
     const m=document.getElementById('adminMsg');
@@ -4164,12 +3772,16 @@ function applyAdminNavVisibility(){
 
   devInput.value=getDeviceId();
   async function probeAuth(){
+    const meInit = {
+      credentials: 'include',
+      headers: {'X-Device-Id': getDeviceId()},
+    };
     try{
-      let r=await _fetch('/auth/me',{credentials:'include'});
+      let r=await _fetch('/auth/me', meInit);
       if(r.status===401){
         try{
           await refreshToken();
-          r=await _fetch('/auth/me',{credentials:'include'});
+          r=await _fetch('/auth/me', meInit);
         }catch(_){}
       }
       const j=await r.json().catch(function(){ return {}; });

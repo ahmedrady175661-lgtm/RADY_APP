@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
+
 from sqlalchemy import update
 from sqlalchemy.orm import Session
 
@@ -13,6 +15,7 @@ from services.security import (
     token_exp_to_datetime,
     verify_password,
 )
+from services.subscription import deactivate_expired_subscription
 
 
 class AuthServiceError(Exception):
@@ -38,6 +41,8 @@ def login(
     if not user or not verify_password(password, user.password_hash):
         raise AuthServiceError(status_code=401, detail="Invalid username or password")
 
+    deactivate_expired_subscription(db, user)
+
     if not user.is_active:
         raise AuthServiceError(status_code=403, detail="Account is disabled")
 
@@ -47,7 +52,9 @@ def login(
             db.add(user)
             db.commit()
         elif user.device_id != device_id:
-            raise AuthServiceError(status_code=403, detail="This account is linked to another device")
+            raise AuthServiceError(
+                status_code=403, detail="This account is linked to another device"
+            )
 
     # New login replaces prior refresh rows for this device (avoids UNIQUE(token_hash) on duplicate JWT).
     revoke_user_device_tokens(db=db, user_id=user.id, device_id=device_id)
@@ -96,6 +103,8 @@ def refresh(
     if user is None:
         raise AuthServiceError(status_code=401, detail="User not found")
 
+    deactivate_expired_subscription(db, user)
+
     if not user.is_active:
         raise AuthServiceError(status_code=403, detail="Account is disabled")
 
@@ -104,11 +113,7 @@ def refresh(
 
     # SECURITY FIX: refresh token rotation with DB validation.
     token_hash = hash_token(refresh_token)
-    token_row = (
-        db.query(RefreshToken)
-        .filter(RefreshToken.token_hash == token_hash)
-        .first()
-    )
+    token_row = db.query(RefreshToken).filter(RefreshToken.token_hash == token_hash).first()
     if token_row is None:
         raise AuthServiceError(status_code=401, detail="Invalid refresh token")
     if token_row.is_revoked:
@@ -146,6 +151,7 @@ def create_user(
     db: Session,
     username: str,
     password: str,
+    display_name: str = "",
     is_admin: bool = False,
     group_id: int | None = None,
     max_stored_large_rows: int = 3_000_000,
@@ -159,14 +165,17 @@ def create_user(
         if g is None:
             raise AuthServiceError(status_code=400, detail="المجموعة غير موجودة")
 
+    dn = (display_name or "").strip()[:200]
     user = User(
         username=username,
+        display_name=dn,
         password_hash=hash_password(password),
         is_admin=is_admin,
         is_active=True,
         device_id=None,
         group_id=group_id,
         max_stored_large_rows=int(max_stored_large_rows),
+        subscription_cycle_started_at=None if is_admin else datetime.now(timezone.utc),
     )
     db.add(user)
     db.commit()
@@ -193,9 +202,7 @@ def set_user_active(
     # SECURITY FIX: refresh token rotation with DB validation.
     if not is_active:
         db.execute(
-            update(RefreshToken)
-            .where(RefreshToken.user_id == target.id)
-            .values(is_revoked=True)
+            update(RefreshToken).where(RefreshToken.user_id == target.id).values(is_revoked=True)
         )
     db.commit()
     db.refresh(target)
@@ -235,4 +242,3 @@ def revoke_user_device_tokens(
         .values(is_revoked=True)
     )
     db.commit()
-

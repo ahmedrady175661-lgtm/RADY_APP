@@ -10,12 +10,21 @@ from schemas.auth import AuthSessionOut, LoginRequest, MeOut
 from services.auth_cookies import clear_auth_cookies, set_auth_cookies
 from services.auth_service import (
     AuthServiceError,
-    login as auth_login,
-    refresh as auth_refresh,
     revoke_user_device_tokens,
 )
+from services.auth_service import (
+    login as auth_login,
+)
+from services.auth_service import (
+    refresh as auth_refresh,
+)
+from services.gemini_usage import sum_gemini_cost_usd_for_user_cycle_channel
 from services.rate_limit import limiter
-
+from services.subscription import (
+    cycle_end_utc,
+    in_grace_period,
+    subscription_days_remaining,
+)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -25,19 +34,35 @@ async def me(
     current: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    u = (
-        db.query(User)
-        .options(joinedload(User.group))
-        .filter(User.id == current.id)
-        .first()
-    )
+    u = db.query(User).options(joinedload(User.group)).filter(User.id == current.id).first()
     if not u:
         raise HTTPException(status_code=401, detail="User not found")
+    days_rem: int | None = None
+    started_at = None
+    ends_at = None
+    grace = False
+    r_cost = 0.0
+    l_cost = 0.0
+    if not u.is_admin and u.subscription_cycle_started_at is not None:
+        started = u.subscription_cycle_started_at
+        started_at = started
+        days_rem = subscription_days_remaining(started)
+        ends_at = cycle_end_utc(started)
+        grace = bool(in_grace_period(started))
+        r_cost = sum_gemini_cost_usd_for_user_cycle_channel(db, u, started, "rest")
+        l_cost = sum_gemini_cost_usd_for_user_cycle_channel(db, u, started, "live")
     return MeOut(
         username=u.username,
         is_admin=u.is_admin,
         group_id=u.group_id,
         group_name=u.group.name if u.group else None,
+        subscription_days_remaining=days_rem,
+        subscription_cycle_started_at=started_at,
+        subscription_cycle_ends_at=ends_at,
+        in_grace_period=grace,
+        gemini_rest_cost_usd=float(r_cost),
+        gemini_live_cost_usd=float(l_cost),
+        gemini_total_cost_usd=float(r_cost + l_cost),
     )
 
 

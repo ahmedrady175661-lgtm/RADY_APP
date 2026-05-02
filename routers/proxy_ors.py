@@ -52,9 +52,7 @@ async def proxy_ors_directions(
                 )
             except Exception as e:
                 logger.warning("ORS proxy request failed: %s", e)
-                raise HTTPException(
-                    status_code=503, detail="خدمة المسارات غير متاحة مؤقتاً."
-                ) from e
+                raise HTTPException(status_code=503, detail="خدمة المسارات غير متاحة مؤقتاً.") from e
         bucket = classify_ors_http(resp.status_code, None)
         if bucket == "quota":
             park_until_midnight_utc(r, "ors", key_id)

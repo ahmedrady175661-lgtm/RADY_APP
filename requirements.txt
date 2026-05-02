@@ -1,3 +1,4 @@
+# Python 3.9+ required (asyncio.to_thread in routers/gps.py and elsewhere)
 fastapi>=0.111.0
 uvicorn>=0.29.0
 httpx>=0.27.0

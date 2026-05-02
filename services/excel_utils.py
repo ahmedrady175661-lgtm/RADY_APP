@@ -1,20 +1,20 @@
 import asyncio
 import io
+
 import openpyxl
-from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 
 from .plate_utils import auto_detect_plate_col
 
 # Project uses openpyxl (not pandas); heavy workbook I/O runs in a thread pool.
 
 
-def load_workbook_maybe_encrypted(
-    file_bytes: bytes, password: str = ""
-) -> openpyxl.Workbook:
+def load_workbook_maybe_encrypted(file_bytes: bytes, password: str = "") -> openpyxl.Workbook:
     """Load workbook, optionally decrypting with password."""
     if password:
         try:
             import msoffcrypto
+
             enc = io.BytesIO(file_bytes)
             dec = io.BytesIO()
             of = msoffcrypto.OfficeFile(enc)
@@ -25,9 +25,7 @@ def load_workbook_maybe_encrypted(
         except Exception as e:
             raise ValueError(f"فشل فك تشفير الملف — تحقق من كلمة المرور: {e}")
     try:
-        return openpyxl.load_workbook(
-            io.BytesIO(file_bytes), read_only=True, data_only=True
-        )
+        return openpyxl.load_workbook(io.BytesIO(file_bytes), read_only=True, data_only=True)
     except Exception as e:
         raise ValueError(f"تعذّر فتح الملف: {e}")
 
@@ -84,14 +82,14 @@ def apply_excel_style(
     """Apply professional RTL styling to a worksheet."""
     ws.sheet_view.rightToLeft = True
 
-    hf    = Font(name="Arial", bold=True, color="FFFFFF", size=12)
+    hf = Font(name="Arial", bold=True, color="FFFFFF", size=12)
     hfill = PatternFill("solid", start_color=header_color)
-    ha    = Alignment(horizontal="center", vertical="center")
-    ca    = Alignment(horizontal="center", vertical="center", wrap_text=True)
-    df    = Font(name="Arial", size=11)
-    brd   = make_border()
-    fe    = PatternFill("solid", start_color="D6E4F0")
-    fo    = PatternFill("solid", start_color="FFFFFF")
+    ha = Alignment(horizontal="center", vertical="center")
+    ca = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    df = Font(name="Arial", size=11)
+    brd = make_border()
+    fe = PatternFill("solid", start_color="D6E4F0")
+    fo = PatternFill("solid", start_color="FFFFFF")
 
     for ci, h in enumerate(headers, 1):
         cell = ws.cell(row=1, column=ci, value=h)
@@ -178,17 +176,13 @@ def workbook_to_bytes(wb: openpyxl.Workbook) -> bytes:
 async def load_workbook_maybe_encrypted_async(
     file_bytes: bytes, password: str = ""
 ) -> openpyxl.Workbook:
-    return await asyncio.to_thread(
-        load_workbook_maybe_encrypted, file_bytes, password
-    )
+    return await asyncio.to_thread(load_workbook_maybe_encrypted, file_bytes, password)
 
 
 async def load_workbook_maybe_encrypted_from_path_async(
     file_path: str, password: str = ""
 ) -> openpyxl.Workbook:
-    return await asyncio.to_thread(
-        load_workbook_maybe_encrypted_from_path, file_path, password
-    )
+    return await asyncio.to_thread(load_workbook_maybe_encrypted_from_path, file_path, password)
 
 
 async def find_best_sheet_async(wb: openpyxl.Workbook):
@@ -203,9 +197,7 @@ async def load_workbook_from_bytes_async(
     content: bytes, read_only: bool = True, data_only: bool = True
 ) -> openpyxl.Workbook:
     def _load() -> openpyxl.Workbook:
-        return openpyxl.load_workbook(
-            io.BytesIO(content), read_only=read_only, data_only=data_only
-        )
+        return openpyxl.load_workbook(io.BytesIO(content), read_only=read_only, data_only=data_only)
 
     return await asyncio.to_thread(_load)
 

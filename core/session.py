@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from typing import Any
 
 
@@ -30,6 +30,14 @@ class SessionState:
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     last_activity_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     connected: bool = False
+    # Gemini Live metering (per session_key)
+    gemini_redis_key_id: str = ""
+    gemini_live_model: str = ""
+    live_connected_at: datetime | None = None
+    live_usage_prompt_tokens: int = 0
+    live_usage_output_tokens: int = 0
+    live_usage_total_tokens: int = 0
+    live_audio_b64_chars: int = 0
 
 
 _sessions: dict[str, SessionState] = {}

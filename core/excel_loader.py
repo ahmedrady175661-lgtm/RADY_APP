@@ -1,11 +1,12 @@
 """Excel parsing and plate index for Live WebSocket checker."""
+
 from __future__ import annotations
 
 import re
 from typing import Any
 
 from services.excel_utils import load_workbook_maybe_encrypted
-from services.plate_utils import format_plate_display, normalize_plate
+from services.plate_utils import normalize_plate
 
 
 def plate_candidates_from_text(text: str) -> list[str]:
@@ -79,10 +80,7 @@ def merge_workbook_plate_column(sheets_map: dict, col: str) -> dict[str, dict]:
             key = normalize_plate(cell)
             if not key or len(key) < 2:
                 continue
-            rd = {
-                headers[i]: (row[i] if i < len(row) else None)
-                for i in range(len(headers))
-            }
+            rd = {headers[i]: (row[i] if i < len(row) else None) for i in range(len(headers))}
             rd["_sheet"] = sheet_name
             rd["_matched_column"] = col
             merged[key] = rd

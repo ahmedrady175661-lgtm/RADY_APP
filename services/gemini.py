@@ -8,8 +8,9 @@ import httpx
 from google import genai
 from google.genai import types
 
-from .plate_utils import normalize_plate_value
+from services.gemini_usage import extract_usage_from_generate_content_response
 
+from .plate_utils import normalize_plate_value
 
 SYSTEM_INSTRUCTION = """
     You are a robust Vehicle License Plate Extractor.
@@ -17,10 +18,12 @@ SYSTEM_INSTRUCTION = """
     STRICT RULE: Ignore any background noise, side conversations, or non-plate words.
     Output MUST be raw JSON only. NEVER return explanations or greetings.
 
-    Association (Arabic cues): Treat vehicle_type and location_details as belonging only to the plate spoken immediately before them in the audio—never copy one car's details onto another unless the speaker clearly links them (e.g. shared place for «السيارات دي» / «كل السيارات»).
-    Single car: If the speaker gives one plate, then location, then a return-to-street cue like «ونرجع للشارع», keep location_details for «السيارة دي» only in that segment.
-    Batch until end: While a batch is active, you may repeat the same location_details for each following plate; when you hear an end cue such as «انتهي», «انتهي السيارات اللي في …», or «نرجع للشارع», stop filling location_details for any plate spoken after that phrase (use null or empty).
+    Association (Arabic cues): Treat vehicle_type and notes as belonging only to the plate spoken immediately before them in the audio—never copy one car's details onto another unless the speaker clearly links them (e.g. shared place for «السيارات دي» / «كل السيارات»).
+    Single car: If the speaker gives one plate, then notes, then a return-to-street cue like «ونرجع للشارع», keep notes for «السيارة دي» only in that segment.
+    Batch until end: While a batch is active, you may repeat the same notes for each following plate; when you hear an end cue such as «انتهي», «انتهي السيارات اللي في …», or «نرجع للشارع», stop filling notes for any plate spoken after that phrase (use null or empty).
     Vehicle type: Put vehicle_type on the same JSON object as that plate's plate_letters / plate_numbers, matching speech where the type usually comes right after the plate for «السيارة دي».
+    Notes rule: Any spoken details other than plate letters/numbers and vehicle_type (e.g. place hints, landmarks, directions, extra remarks) should go into notes.
+    Group cue rule: If the speaker says «السيارات دي» / «السيارات ده» / «كل السيارات» (or similar), never attach that cue or its notes to any plate spoken before it; apply the notes only to plates spoken after that phrase until an end cue.
     Plate format is strict and mandatory:
     - plate_letters must be exactly 3 Arabic letters (no less, no more).
     - plate_numbers must be exactly 4 digits (0-9) (no less, no more).
@@ -31,14 +34,15 @@ SYSTEM_INSTRUCTION = """
 USER_PROMPT = """
 Listen to the attached audio. Extract every license plate mentioned.
 Apply the same four rules from the system instruction:
-1) vehicle_type and location_details attach only to the plate spoken immediately before them; do not copy across plates unless «السيارات دي» / «كل السيارات» (or similar) clearly shares one place.
-2) One plate + location + «ونرجع للشارع» ⇒ location_details for «السيارة دي» only in that segment.
-3) Batch: repeat the same location_details for following plates until «انتهي», «انتهي السيارات اللي في …», or «نرجع للشارع»; after that, leave location_details empty/null for later plates.
+1) vehicle_type and notes attach only to the plate spoken immediately before them; do not copy across plates unless «السيارات دي» / «كل السيارات» (or similar) clearly shares one place.
+2) One plate + notes + «ونرجع للشارع» ⇒ notes for «السيارة دي» only in that segment.
+3) Batch: repeat the same notes for following plates until «انتهي», «انتهي السيارات اللي في …», or «نرجع للشارع»; after that, leave notes empty/null for later plates.
 4) vehicle_type belongs on the same object as that plate; type usually follows the plate for «السيارة دي».
+5) «السيارات دي» and similar group cues never affect the previous plate; only following plates get those notes.
 
 Output ONLY a JSON array where each object has:
 - "street_name": The current street.
-- "location_details": Specific landmarks (e.g. 'سلخه', 'جراج','معدي اول يمين' ,'بعد المسجد', 'أول برحة').
+- "notes": Any additional spoken details (e.g. landmarks, directions, remarks such as 'سلخه', 'جراج','معدي اول يمين','بعد المسجد','أول برحة').
 - "plate_letters": Arabic letters SEPARATED BY SPACES (e.g. "ح أ أ" or "ر س م").
 - "plate_numbers": Numeric part only (e.g. "3108").
 - "vehicle_type": Vehicle description if mentioned, otherwise null.
@@ -123,9 +127,13 @@ def _upload_file_sync(tmp_path: str, api_key: str, gemini_mime: str):
     return client, uploaded
 
 
-def _generate_content_sync(client: genai.Client, model_name: str, uploaded) -> str:
-    """Call generate_content; retry a few times on transient 503 UNAVAILABLE from Google."""
+def _generate_content_sync(client: genai.Client, model_name: str, uploaded) -> tuple[str, dict]:
+    """Call generate_content; retry a few times on transient 503 UNAVAILABLE from Google.
+
+    Returns (response_text, usage_dict with input_tokens, output_tokens, total_tokens).
+    """
     max_attempts = 4
+    last_usage: dict = {}
     for attempt in range(max_attempts):
         try:
             response = client.models.generate_content(
@@ -134,19 +142,19 @@ def _generate_content_sync(client: genai.Client, model_name: str, uploaded) -> s
                     system_instruction=SYSTEM_INSTRUCTION,
                     temperature=0.0,
                     response_mime_type="application/json",
-                    automatic_function_calling=types.AutomaticFunctionCallingConfig(
-                        disable=True
-                    ),
+                    automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
                 ),
                 contents=[USER_PROMPT, uploaded],
             )
-            return response.text
+            last_usage = extract_usage_from_generate_content_response(response)
+            return (response.text or "", last_usage)
         except Exception as e:
             t = str(e).lower()
             transient = "503" in t or "unavailable" in t
             if not transient or attempt == max_attempts - 1:
                 raise
             time.sleep(min(2**attempt, 8))
+    raise RuntimeError("generate_content exhausted retries")
 
 
 async def _wait_for_active(client: genai.Client, uploaded, api_key: str) -> None:
@@ -161,9 +169,7 @@ async def _wait_for_active(client: genai.Client, uploaded, api_key: str) -> None
         try:
             file_info = await asyncio.to_thread(client.files.get, uploaded.name)
             state_name = (
-                file_info.state.name
-                if hasattr(file_info.state, "name")
-                else str(file_info.state)
+                file_info.state.name if hasattr(file_info.state, "name") else str(file_info.state)
             )
             print(f"[Gemini] Poll {attempt}: state={state_name}")
             if state_name == "ACTIVE":
@@ -175,8 +181,7 @@ async def _wait_for_active(client: genai.Client, uploaded, api_key: str) -> None
             raise
         except Exception:
             rest_url = (
-                f"https://generativelanguage.googleapis.com"
-                f"/v1beta/{uploaded.name}?key={api_key}"
+                f"https://generativelanguage.googleapis.com/v1beta/{uploaded.name}?key={api_key}"
             )
             try:
                 resp = await http.get(rest_url, timeout=10.0)
@@ -188,9 +193,7 @@ async def _wait_for_active(client: genai.Client, uploaded, api_key: str) -> None
                     print("[Gemini] File is ACTIVE ✅ (REST)")
                     return
                 if sn == "FAILED":
-                    raise RuntimeError(
-                        "فشل Gemini في معالجة الملف الصوتي (FAILED)"
-                    )
+                    raise RuntimeError("فشل Gemini في معالجة الملف الصوتي (FAILED)")
             except RuntimeError:
                 raise
             except Exception as e2:
@@ -266,7 +269,7 @@ def _enrich_plates(
             pt = gps_points[-1]
         else:
             pt = None
-        p["gps"] = f"{pt.get('lat','')},{pt.get('lng','')}" if pt else ""
+        p["gps"] = f"{pt.get('lat', '')},{pt.get('lng', '')}" if pt else ""
         p["street_location"] = mid_street_gps
 
         p["recorder_name"] = recorder_name
@@ -285,8 +288,11 @@ async def process_audio(
     recorder_name: str,
     sheet_name: str,
     gps_points: list[dict],
-) -> list[dict]:
-    """رفع تسجيل من المتصفح (MediaRecorder) إلى Gemini ثم استخراج اللوحات."""
+) -> tuple[list[dict], dict]:
+    """رفع تسجيل من المتصفح (MediaRecorder) إلى Gemini ثم استخراج اللوحات.
+
+    Second return value: usage tokens from generate_content (may be empty dict).
+    """
     tmp_path = (file_path or "").strip()
     if not tmp_path:
         raise RuntimeError("missing_audio_file_path")
@@ -301,13 +307,13 @@ async def process_audio(
 
         await _wait_for_active(client, uploaded, api_key)
 
-        raw_text = await asyncio.to_thread(
+        raw_text, usage_meta = await asyncio.to_thread(
             _generate_content_sync, client, model_name, uploaded
         )
 
         plates = _parse_gemini_response(raw_text)
         plates = _enrich_plates(plates, recorder_name, sheet_name, gps_points)
-        return plates
+        return plates, usage_meta
 
     finally:
         try:

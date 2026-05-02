@@ -8,9 +8,9 @@ import itertools
 import logging
 import os
 import re
-import unicodedata
 import tempfile
 import threading
+import unicodedata
 from contextlib import contextmanager
 from datetime import datetime
 from typing import Any
@@ -148,12 +148,7 @@ def _large_dict_from_pg_row(row: dict[str, Any]) -> dict[str, Any]:
 
 def _sheet_headers_order_sorted(col_idx_by_canonical: dict[str, int]) -> list[str]:
     """ترتيب أعمدة الشيت من اليسار لليمين (أسماء معتمدة)."""
-    return [
-        canon
-        for canon, _ in sorted(
-            col_idx_by_canonical.items(), key=lambda kv: int(kv[1])
-        )
-    ]
+    return [canon for canon, _ in sorted(col_idx_by_canonical.items(), key=lambda kv: int(kv[1]))]
 
 
 def _parse_sheet_headers_order_pg(val: Any) -> list[str] | None:
@@ -405,9 +400,7 @@ def _apply_migrations(conn) -> None:
         cur.execute(
             "CREATE INDEX IF NOT EXISTS idx_clr_import_plate ON check_large_rows (import_id, plate_normalized)"
         )
-        cur.execute(
-            "CREATE INDEX IF NOT EXISTS idx_clr_user ON check_large_rows (user_id)"
-        )
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_clr_user ON check_large_rows (user_id)")
         cur.execute(
             "CREATE INDEX IF NOT EXISTS idx_clr_user_plate ON check_large_rows (user_id, plate_normalized)"
         )
@@ -426,9 +419,7 @@ def _ensure_peer_group_mirror_and_rls(conn) -> None:
         )
         """
     )
-    conn.execute(
-        "CREATE INDEX IF NOT EXISTS idx_cmug_group ON check_mirror_user_groups (group_id)"
-    )
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_cmug_group ON check_mirror_user_groups (group_id)")
     conn.execute(
         """
         DO $$
@@ -644,9 +635,7 @@ def get_stored_large_meta_for_check_sync(
     ensure_check_pg_schema(dsn)
     imports_all: list[dict[str, Any]] = []
     for uid in peers:
-        imports_all.extend(
-            list_imports_sync(dsn, user_id, is_admin, owner_user_id=uid)
-        )
+        imports_all.extend(list_imports_sync(dsn, user_id, is_admin, owner_user_id=uid))
     imports_all.sort(key=lambda x: (x.get("created_at") or "", x["id"]))
     if not imports_all:
         return None
@@ -665,7 +654,9 @@ def get_stored_large_meta_for_check_sync(
     }
 
 
-def admin_list_check_storage_sync(dsn: str, admin_user_id: int, is_admin: bool) -> list[dict[str, Any]]:
+def admin_list_check_storage_sync(
+    dsn: str, admin_user_id: int, is_admin: bool
+) -> list[dict[str, Any]]:
     if not is_admin:
         return []
     ensure_check_pg_schema(dsn)
@@ -692,7 +683,9 @@ def admin_list_check_storage_sync(dsn: str, admin_user_id: int, is_admin: bool) 
                         "user_id": r["user_id"],
                         "import_count": int(r["import_count"] or 0),
                         "row_count": int(r["row_count"] or 0),
-                        "updated_at": r["last_import"].isoformat() if r.get("last_import") else None,
+                        "updated_at": r["last_import"].isoformat()
+                        if r.get("last_import")
+                        else None,
                     }
                 )
             return out
@@ -716,9 +709,7 @@ def _resolve_large_workbook_sheet(
         return large_wb[ls], None
     if len(names) > 1:
         first = names[0]
-        note = (
-            f"الملف يحتوي {len(names)} ورقة؛ تم استيراد الورقة الأولى فقط («{first}»)."
-        )
+        note = f"الملف يحتوي {len(names)} ورقة؛ تم استيراد الورقة الأولى فقط («{first}»)."
         return large_wb[first], note
     return find_best_sheet(large_wb), None
 
@@ -743,14 +734,11 @@ def import_large_workbook_sync(
     fname = _safe_filename(source_filename)
     large_wb = load_workbook_maybe_encrypted(lc_bytes, password)
     try:
-        large_ws, sheet_selection_note = _resolve_large_workbook_sheet(
-            large_wb, large_sheet
-        )
+        large_ws, sheet_selection_note = _resolve_large_workbook_sheet(large_wb, large_sheet)
         lrows = list(large_ws.iter_rows(values_only=True))
         if not lrows:
             raise ValueError("الملف الكبير فارغ")
         header_l = lrows[0]
-        lh = [str(h).strip() if h is not None else "" for h in header_l]
         col_idx_by_canonical, hdr_err = _validate_large_import_headers(header_l)
         if hdr_err or not col_idx_by_canonical:
             raise ValueError(hdr_err or "ترويسة الملف الكبير غير صالحة")
@@ -767,9 +755,7 @@ def import_large_workbook_sync(
 
         if group_max_rows_limit is not None:
             peers = peer_user_ids_for_check_sync(dsn, user_id, is_admin)
-            current_total = count_rows_for_user_ids_sync(
-                dsn, user_id, is_admin, peers
-            )
+            current_total = count_rows_for_user_ids_sync(dsn, user_id, is_admin, peers)
             if current_total + new_row_count > int(group_max_rows_limit):
                 raise ValueError(
                     "تجاوزت الحد المسموح لعدد الصفوف المخزنة. راجع الحد المتاح لك مع الأدمن."
@@ -927,9 +913,7 @@ def _fetch_matches_by_plates_batch(
     return result
 
 
-def _load_imports_ordered_for_peers(
-    conn, peer_user_ids: list[int]
-) -> list[dict[str, Any]]:
+def _load_imports_ordered_for_peers(conn, peer_user_ids: list[int]) -> list[dict[str, Any]]:
     if not peer_user_ids:
         return []
     with conn.cursor(row_factory=dict_row) as cur:
@@ -976,9 +960,7 @@ def _apply_match_export_column_widths(
             title_s = _strip_small_word_from_header_title(hs)
             if "ملاحظات" in title_s or "ملاحظات" in hs:
                 w = 46.0
-            elif "gps" in hs.lower() or _norm_header_sim("GPS") == _norm_header_sim(
-                title_s
-            ):
+            elif "gps" in hs.lower() or _norm_header_sim("GPS") == _norm_header_sim(title_s):
                 w = 30.0
             else:
                 w = 23.0
@@ -1070,9 +1052,7 @@ def run_check_plates_postgres_sync(
 
     small_wb = None
     try:
-        small_wb = openpyxl.load_workbook(
-            io.BytesIO(sc_bytes), read_only=True, data_only=True
-        )
+        small_wb = openpyxl.load_workbook(io.BytesIO(sc_bytes), read_only=True, data_only=True)
         small_ws = (
             small_wb[small_sheet]
             if small_sheet and small_sheet in small_wb.sheetnames
@@ -1085,7 +1065,9 @@ def run_check_plates_postgres_sync(
         sh = [str(h).strip() if h is not None else "" for h in header_s]
         row2 = next(srows, None)
         row3 = next(srows, None)
-        detected_small = (auto_detect_plate_col(sh) or auto_detect_plate_col_from_row3(sh, row3) or "")
+        detected_small = (
+            auto_detect_plate_col(sh) or auto_detect_plate_col_from_row3(sh, row3) or ""
+        )
         sc = small_col.strip() or detected_small
         if not sc or sc not in sh:
             return {
@@ -1191,13 +1173,9 @@ def run_check_plates_postgres_sync(
                 ]
                 if not lh:
                     lh = list(union_headers)
-                sec_le = _map_export_headers_to_sheet(
-                    list(large_export_cols or []), lh
-                )
+                sec_le = _map_export_headers_to_sheet(list(large_export_cols or []), lh)
                 if not sec_le:
-                    sec_le = _norm_large_export_cols(
-                        list(large_export_cols or []), union_headers
-                    )
+                    sec_le = _norm_large_export_cols(list(large_export_cols or []), union_headers)
                 if not sec_le:
                     sec_le = list(union_headers)
 
@@ -1209,10 +1187,7 @@ def run_check_plates_postgres_sync(
                     sm = ent["small_vals"]
                     for ld in lst:
                         nidx = _row_norm_key_index(ld)
-                        large_vals = [
-                            _cell_display(_large_row_get(ld, c, nidx))
-                            for c in sec_le
-                        ]
+                        large_vals = [_cell_display(_large_row_get(ld, c, nidx)) for c in sec_le]
                         rows_buf.append((large_vals, sm))
 
                 if not rows_buf:
@@ -1220,14 +1195,12 @@ def run_check_plates_postgres_sync(
 
                 large_only = [rv[0] for rv in rows_buf]
                 sec_le_f, _keep_ix = _drop_all_null_large_columns(sec_le, large_only)
-                rows_buf_f = [
-                    ([lv[j] for j in _keep_ix], sm) for lv, sm in rows_buf
-                ]
+                rows_buf_f = [([lv[j] for j in _keep_ix], sm) for lv, sm in rows_buf]
 
                 pc_l = (imp.get("plate_column") or "").strip()
-                hdr_vals = [
-                    _strip_small_word_from_header_title(c) for c in sec_le_f
-                ] + [_strip_small_word_from_header_title(c) for c in se_cols]
+                hdr_vals = [_strip_small_word_from_header_title(c) for c in sec_le_f] + [
+                    _strip_small_word_from_header_title(c) for c in se_cols
+                ]
                 hdr_src = ["large"] * len(sec_le_f) + ["small"] * len(se_cols)
 
                 for lv_f, small_vals in rows_buf_f:
@@ -1305,9 +1278,7 @@ def run_check_plates_postgres_sync(
                     )
                     matched_rows_count += 1
                     if len(preview_rows) < PREVIEW_MAX_ROWS:
-                        pr = [
-                            "" if v is None else str(v).strip() for v in row_vals
-                        ]
+                        pr = ["" if v is None else str(v).strip() for v in row_vals]
                         preview_rows.append(pr)
                         if preview_sections:
                             preview_sections[-1]["rows"].append(pr)
@@ -1386,9 +1357,9 @@ def run_check_plates_postgres_sync(
             }
 
         le_preview = _norm_large_export_cols(list(large_export_cols or []), union_headers)
-        display_headers = [
-            _strip_small_word_from_header_title(c) for c in le_preview
-        ] + [_strip_small_word_from_header_title(c) for c in se_cols]
+        display_headers = [_strip_small_word_from_header_title(c) for c in le_preview] + [
+            _strip_small_word_from_header_title(c) for c in se_cols
+        ]
         col_sources_preview = ["large"] * len(le_preview) + ["small"] * len(se_cols)
         plate_indices_flat: list[int] = []
         if imports:
@@ -1462,7 +1433,9 @@ def collect_gps_vehicles_stored_sync(
             return {"detail": "الملف الصغير فارغ", "vehicles": []}
         sh = [str(h).strip() if h is not None else "" for h in sd[0]]
         row3 = sd[2] if len(sd) > 2 else None
-        sc = small_col.strip() or (auto_detect_plate_col(sh) or auto_detect_plate_col_from_row3(sh, row3) or "")
+        sc = small_col.strip() or (
+            auto_detect_plate_col(sh) or auto_detect_plate_col_from_row3(sh, row3) or ""
+        )
         if not sc or sc not in sh:
             return {
                 "detail": f"لم يُعثر على عمود اللوحة في الملف الصغير. الأعمدة: {sh}",
@@ -1493,9 +1466,7 @@ def collect_gps_vehicles_stored_sync(
                     fn = imp_name.get(iid, "")
                     for ld in rds:
                         nix = _row_norm_key_index(ld)
-                        gps = str(
-                            _large_row_get(ld, gps_col or "", nix) or ""
-                        ).strip()
+                        gps = str(_large_row_get(ld, gps_col or "", nix) or "").strip()
                         plate = format_plate_display(norm) or str(rp or "").strip()
                         key = (plate, gps, fn)
                         if key in seen:
@@ -1505,9 +1476,7 @@ def collect_gps_vehicles_stored_sync(
                             {
                                 "plate": plate,
                                 "gps": gps,
-                                "date": str(
-                                    _large_row_get(ld, date_col or "", nix) or ""
-                                ).strip()
+                                "date": str(_large_row_get(ld, date_col or "", nix) or "").strip()
                                 if date_col
                                 else "",
                                 "vehicle_type": str(
@@ -1516,12 +1485,7 @@ def collect_gps_vehicles_stored_sync(
                                 if type_col
                                 else "",
                                 "notes": (
-                                    str(
-                                        _large_row_get(
-                                            ld, notes_col or "", nix
-                                        )
-                                        or ""
-                                    ).strip()
+                                    str(_large_row_get(ld, notes_col or "", nix) or "").strip()
                                     if notes_col
                                     else ""
                                 )
@@ -1596,9 +1560,7 @@ def admin_list_imports_detailed_sync(
                         "sheet_name": r.get("sheet_name") or "",
                         "plate_column": r.get("plate_column") or "",
                         "row_count": int(r["row_count"] or 0),
-                        "created_at": r["created_at"].isoformat()
-                        if r.get("created_at")
-                        else None,
+                        "created_at": r["created_at"].isoformat() if r.get("created_at") else None,
                     }
                 )
             return out

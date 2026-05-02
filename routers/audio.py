@@ -8,8 +8,10 @@ from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPExcepti
 from fastapi.responses import JSONResponse
 
 from dependencies.auth import get_current_user
+from models.user import User
 from services.gemini import process_audio
 from services.gemini_catalog import is_gemini_model_allowed_sync
+from services.gemini_usage import record_gemini_usage_event_sync
 from services.job_store import (
     TTL_PROCESSING_SEC,
     TTL_TERMINAL_SEC,
@@ -21,7 +23,6 @@ from services.job_store import (
 from services.provider_keys import async_gemini_try_all, has_any_gemini_keys
 from services.upload_security import MAX_AUDIO_BYTES, save_upload_to_temp_with_limit
 
-
 logger = logging.getLogger(__name__)
 _JOB_ID_RE = re.compile(
     r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
@@ -31,6 +32,7 @@ _JOB_ID_RE = re.compile(
 
 def _job_id_valid(job_id: str) -> bool:
     return bool(_JOB_ID_RE.match((job_id or "").strip()))
+
 
 # Limit concurrent Gemini/audio jobs per worker (reduces API spikes and memory).
 _AUDIO_JOB_CONCURRENCY = 8
@@ -45,6 +47,7 @@ router = APIRouter(
 
 async def _audio_job_task(
     job_id: str,
+    user_id: int,
     file_path: str,
     filename: str,
     model_name: str,
@@ -70,8 +73,8 @@ async def _audio_job_task(
                     gps_points=gps_points,
                 )
 
-            plates, audio_err = await async_gemini_try_all(_attempt)
-            if audio_err is not None and plates is None:
+            bundle, redis_key_id, audio_err = await async_gemini_try_all(_attempt)
+            if audio_err is not None and bundle is None:
                 err_text = str(audio_err or "")
                 if "no_gemini_key" in err_text or "no_redis" in err_text:
                     raise RuntimeError("no_gemini_key") from audio_err
@@ -89,10 +92,31 @@ async def _audio_job_task(
                     logger.exception("Gemini REST failed")
                     raise RuntimeError("gemini_failed") from audio_err
 
-            if plates is None:
+            if bundle is None:
                 if model_err_detail:
                     raise RuntimeError(f"model_not_supported::{model_err_detail}")
                 raise RuntimeError("gemini_failed")
+
+            plates, usage_meta = bundle
+            if redis_key_id and user_id:
+                inp = usage_meta.get("input_tokens") if isinstance(usage_meta, dict) else None
+                out = usage_meta.get("output_tokens") if isinstance(usage_meta, dict) else None
+                tot = usage_meta.get("total_tokens") if isinstance(usage_meta, dict) else None
+                has_tok = inp is not None or out is not None or tot is not None
+                await asyncio.to_thread(
+                    record_gemini_usage_event_sync,
+                    user_id=user_id,
+                    channel="rest",
+                    redis_key_id=redis_key_id,
+                    model_id=model_name,
+                    correlation_id=job_id,
+                    input_tokens=inp,
+                    output_tokens=out,
+                    total_tokens=tot,
+                    confidence="api" if has_tok else "estimated",
+                    request_kind="generate_content",
+                    extra={"job_id": job_id, "filename": filename},
+                )
 
             payload = {"plates": plates, "total": len(plates)}
             await job_save(
@@ -138,6 +162,7 @@ async def _audio_job_task(
 @router.post("/process")
 async def process(
     background_tasks: BackgroundTasks,
+    user: User = Depends(get_current_user),
     model_name: str = Form(...),
     recorder_name: str = Form(""),
     sheet_name: str = Form("بيانات المركبات"),
@@ -183,6 +208,7 @@ async def process(
         background_tasks.add_task(
             _audio_job_task,
             job_id,
+            int(user.id),
             file_path,
             file_name,
             model_name,

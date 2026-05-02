@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import BaseModel, Field
 
 
@@ -33,3 +35,12 @@ class MeOut(BaseModel):
     is_admin: bool
     group_id: int | None = None
     group_name: str | None = None
+    # Non-admin subscription window (30-day cycle); null when admin or not configured.
+    subscription_days_remaining: int | None = None
+    subscription_cycle_started_at: datetime | None = None
+    subscription_cycle_ends_at: datetime | None = None
+    in_grace_period: bool = False
+    # Current subscription window — estimated Gemini USD (same rules as admin cycle view).
+    gemini_rest_cost_usd: float = 0.0
+    gemini_live_cost_usd: float = 0.0
+    gemini_total_cost_usd: float = 0.0

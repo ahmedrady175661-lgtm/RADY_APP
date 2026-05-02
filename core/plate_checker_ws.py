@@ -1,4 +1,5 @@
 """WebSocket message handling for Live plate checker (FastAPI WebSocket)."""
+
 from __future__ import annotations
 
 import asyncio
@@ -14,16 +15,7 @@ from fastapi import WebSocket
 from starlette.websockets import WebSocketDisconnect
 
 from config import settings
-from core.gemini_client import create_gemini_session
-from core.session import (
-    SessionState,
-    get_session,
-    get_or_create_session,
-    remove_session,
-    touch_session,
-)
 from core.excel_loader import (
-    format_plate_display,
     lookup_plate,
     merge_workbook_plate_column,
     normalize_plate,
@@ -31,8 +23,19 @@ from core.excel_loader import (
     plate_candidates_from_text,
     union_column_headers,
 )
+from core.gemini_client import create_gemini_session
+from core.session import (
+    SessionState,
+    get_or_create_session,
+    get_session,
+    remove_session,
+    touch_session,
+)
 from services.check_temp_storage import temp_plate_exists_sync
 from services.gemini_catalog import is_gemini_model_allowed_sync
+from services.gemini_usage import flush_live_gemini_usage_for_session_sync
+from services.live_excel_upload_store import pop_upload_path
+from services.plate_utils import format_plate_display
 from services.provider_key_pool import (
     delete_key_forever,
     get_sync_redis,
@@ -41,7 +44,6 @@ from services.provider_key_pool import (
     promote_parked_keys,
 )
 from services.provider_keys import classify_gemini_error
-from services.live_excel_upload_store import pop_upload_path
 
 logger = logging.getLogger(__name__)
 
@@ -94,13 +96,57 @@ async def _send(websocket: WebSocket, payload: dict) -> None:
         logger.error("Failed to send WS: %s", e)
 
 
-async def _send_error(
-    websocket: WebSocket, message: str, error_type: str = "general"
-) -> None:
+async def _send_error(websocket: WebSocket, message: str, error_type: str = "general") -> None:
     await _send(
         websocket,
         {"type": "error", "data": {"message": message, "error_type": error_type}},
     )
+
+
+def _merge_live_usage_metadata(session: SessionState, raw: dict) -> None:
+    """Accumulate Live API usage when server sends usageMetadata (cumulative max).
+
+    Field names vary by API revision; we accept camelCase (typical JSON over the wire)
+    and snake_case. REST `google-genai` usage for generate_content was verified:
+    prompt_token_count / candidates_token_count / total_token_count on the SDK object;
+    Live raw WS messages often mirror protobuf JSON (e.g. promptTokenCount).
+    """
+    um = raw.get("usageMetadata") or raw.get("usage_metadata")
+    if not isinstance(um, dict):
+        return
+
+    def _read_int(d: dict, *keys: str) -> int | None:
+        for k in keys:
+            v = d.get(k)
+            if v is not None:
+                try:
+                    return int(v)
+                except (TypeError, ValueError):
+                    continue
+        return None
+
+    pt = _read_int(
+        um,
+        "promptTokenCount",
+        "prompt_token_count",
+        "promptTokens",
+        "totalPromptTokens",
+    )
+    ot = _read_int(
+        um,
+        "candidatesTokenCount",
+        "candidates_token_count",
+        "candidatesTokens",
+        "outputTokenCount",
+        "output_token_count",
+    )
+    tt = _read_int(um, "totalTokenCount", "total_token_count", "totalTokens")
+    if pt is not None:
+        session.live_usage_prompt_tokens = max(session.live_usage_prompt_tokens, pt)
+    if ot is not None:
+        session.live_usage_output_tokens = max(session.live_usage_output_tokens, ot)
+    if tt is not None:
+        session.live_usage_total_tokens = max(session.live_usage_total_tokens, tt)
 
 
 def _segment_for_current_turn_transcript(session: SessionState) -> str:
@@ -114,9 +160,8 @@ def _segment_for_current_turn_transcript(session: SessionState) -> str:
 
 async def _maybe_live_sheet_check(websocket: WebSocket, session: SessionState) -> None:
     """While user speaks: infer plate from STT and lookup in Excel (real-time)."""
-    if (
-        not session.check_temp_enabled
-        and (not session.excel_loaded or not (session.excel_plate_column or "").strip())
+    if not session.check_temp_enabled and (
+        not session.excel_loaded or not (session.excel_plate_column or "").strip()
     ):
         return
     t = _segment_for_current_turn_transcript(session)
@@ -178,9 +223,49 @@ def _strip_markdown_json_fence(text: str) -> str:
     return t
 
 
+def _entry_moving(item: dict) -> bool:
+    """True if model marked moving or Arabic «متحرك» appears on that plate's row."""
+    if bool(item.get("moving")):
+        return True
+    for k in ("vehicle_type", "notes"):
+        v = item.get(k)
+        if v is not None and "متحرك" in str(v):
+            return True
+    return False
+
+
+def _rest_plate_string(obj: dict) -> str | None:
+    """
+    Build 'LLL NNNN' from Live/REST JSON fields plate_letters + plate_numbers
+    (same shape as Tafrigh prompts in gemini_client).
+    """
+    raw_letters = obj.get("plate_letters")
+    raw_numbers = obj.get("plate_numbers")
+    if raw_letters is None and raw_numbers is None:
+        return None
+    letters = "".join(re.findall(r"[\u0621-\u064A]", str(raw_letters or "")))
+    digits = "".join(re.findall(r"\d", str(raw_numbers or "")))
+    if len(letters) != 3 or len(digits) != 4:
+        return None
+    return f"{letters} {digits}"
+
+
+def _plate_entry_from_dict(item: dict) -> dict[str, Any] | None:
+    """One plate row: explicit ``plate`` or composed ``plate_letters`` + ``plate_numbers``."""
+    moving = _entry_moving(item)
+    p = item.get("plate")
+    if p is not None and str(p).strip():
+        return {"plate": str(p).strip(), "moving": moving}
+    composed = _rest_plate_string(item)
+    if composed:
+        return {"plate": composed, "moving": moving}
+    return None
+
+
 def _parse_plate_payload(blob: str) -> list[dict[str, Any]]:
     """
-    Parse Gemini JSON: objects with plate + optional moving.
+    Parse Gemini JSON: objects with plate + optional moving,
+    or plate_letters + plate_numbers (Live system prompt shape).
     Returns [{"plate": str|None, "moving": bool}, ...].
     """
     blob = blob.strip()
@@ -190,37 +275,36 @@ def _parse_plate_payload(blob: str) -> list[dict[str, Any]]:
     def collect_from_obj(obj: dict) -> list[dict[str, Any]]:
         out: list[dict[str, Any]] = []
         if "plate" in obj:
-            out.append(
-                {
-                    "plate": obj.get("plate"),
-                    "moving": bool(obj.get("moving")),
-                }
-            )
+            e = _plate_entry_from_dict(obj)
+            if e:
+                out.append(e)
         inner = obj.get("plates")
         if isinstance(inner, list):
             for el in inner:
-                if isinstance(el, dict) and "plate" in el:
-                    out.append(
-                        {
-                            "plate": el.get("plate"),
-                            "moving": bool(el.get("moving")),
-                        }
-                    )
+                if isinstance(el, dict):
+                    e = _plate_entry_from_dict(el)
+                    if e:
+                        out.append(e)
                 elif isinstance(el, str):
                     out.append({"plate": el, "moving": False})
+        if not out:
+            e = _plate_entry_from_dict(obj)
+            if e:
+                out.append(e)
         return out
 
     try:
         data = json.loads(blob)
     except json.JSONDecodeError:
+        data = None
+        # Prefer a top-level JSON array slice before a single-object slice — using
+        # first "{" .. last "}" on array text breaks multi-plate payloads.
         lb, rb = blob.find("["), blob.rfind("]")
         if lb >= 0 and rb > lb:
             try:
                 data = json.loads(blob[lb : rb + 1])
             except json.JSONDecodeError:
                 data = None
-        else:
-            data = None
         if data is None:
             lo, hi = blob.find("{"), blob.rfind("}") + 1
             if lo >= 0 and hi > lo:
@@ -235,12 +319,9 @@ def _parse_plate_payload(blob: str) -> list[dict[str, Any]]:
         plates: list[dict[str, Any]] = []
         for item in data:
             if isinstance(item, dict):
-                plates.append(
-                    {
-                        "plate": item.get("plate"),
-                        "moving": bool(item.get("moving")),
-                    }
-                )
+                e = _plate_entry_from_dict(item)
+                if e:
+                    plates.append(e)
             elif isinstance(item, str):
                 plates.append({"plate": item, "moving": False})
         return plates
@@ -315,9 +396,19 @@ async def _lookup_plate_outcome(
     return (None, {}, "", "")
 
 
-async def _emit_check_session_sync(
-    websocket: WebSocket, items: list[dict[str, Any]]
-) -> None:
+def _dedupe_sync_items_last_wins(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """One row per normalized plate; later entries win (authoritative final pass)."""
+    merged: dict[str, dict[str, Any]] = {}
+    for it in items:
+        p = str(it.get("plate") or "").strip()
+        nk = normalize_plate(p) if p else ""
+        if not nk:
+            continue
+        merged[nk] = it
+    return list(merged.values())
+
+
+async def _emit_check_session_sync(websocket: WebSocket, items: list[dict[str, Any]]) -> None:
     if not items:
         return
     await _send(
@@ -327,7 +418,11 @@ async def _emit_check_session_sync(
 
 
 async def _emit_plate_result(
-    websocket: WebSocket, session: SessionState, plate: Any
+    websocket: WebSocket,
+    session: SessionState,
+    plate: Any,
+    *,
+    moving: bool = False,
 ) -> None:
     pv = _plate_value_from_entry(plate)
     normalized_plate = _sanitize_live_plate_text(pv)
@@ -337,9 +432,7 @@ async def _emit_plate_result(
     raw = normalized_plate
     plate_str = format_plate_display(raw) or raw
     if session.check_temp_enabled:
-        found, safe_row, matched, hit_sheet = await _lookup_plate_outcome(
-            session, raw
-        )
+        found, safe_row, matched, hit_sheet = await _lookup_plate_outcome(session, raw)
         await _send(
             websocket,
             {
@@ -347,6 +440,7 @@ async def _emit_plate_result(
                 "data": {
                     "plate": plate_str,
                     "found": found,
+                    "moving": bool(moving),
                     "details": safe_row,
                     "compare_column": matched,
                     "sheet": hit_sheet,
@@ -363,6 +457,7 @@ async def _emit_plate_result(
                     "data": {
                         "plate": plate_str,
                         "found": None,
+                        "moving": bool(moving),
                         "details": {},
                         "compare_column": "",
                         "sheet": "",
@@ -372,9 +467,7 @@ async def _emit_plate_result(
                 },
             )
             return
-        found, safe_row, matched, hit_sheet = await _lookup_plate_outcome(
-            session, raw
-        )
+        found, safe_row, matched, hit_sheet = await _lookup_plate_outcome(session, raw)
         await _send(
             websocket,
             {
@@ -382,6 +475,7 @@ async def _emit_plate_result(
                 "data": {
                     "plate": plate_str,
                     "found": found,
+                    "moving": bool(moving),
                     "details": safe_row,
                     "compare_column": matched,
                     "sheet": hit_sheet,
@@ -397,6 +491,7 @@ async def _emit_plate_result(
                 "data": {
                     "plate": plate_str,
                     "found": None,
+                    "moving": bool(moving),
                     "details": {},
                     "compare_column": "",
                     "sheet": "",
@@ -406,10 +501,9 @@ async def _emit_plate_result(
         )
 
 
-async def _emit_model_plate_if_new(
-    websocket: WebSocket, session: SessionState, plate: Any
-) -> bool:
+async def _emit_model_plate_if_new(websocket: WebSocket, session: SessionState, plate: Any) -> bool:
     """Emit model plate result (no per-turn dedupe suppression)."""
+    moving = _entry_moving(plate) if isinstance(plate, dict) else False
     pv = _plate_value_from_entry(plate)
     normalized_plate = _sanitize_live_plate_text(pv)
     if not normalized_plate:
@@ -417,13 +511,11 @@ async def _emit_model_plate_if_new(
     key = normalize_plate(normalized_plate)
     if key:
         session.model_plate_norm_keys.add(key)
-    await _emit_plate_result(websocket, session, normalized_plate)
+    await _emit_plate_result(websocket, session, normalized_plate, moving=moving)
     return True
 
 
-async def _process_plate_text(
-    websocket: WebSocket, session: SessionState, text: str
-) -> None:
+async def _process_plate_text(websocket: WebSocket, session: SessionState, text: str) -> None:
     text = text.strip()
     logger.info("Gemini text: %s", text[:500])
     blob = _strip_markdown_json_fence(text)
@@ -433,11 +525,7 @@ async def _process_plate_text(
         await _send(websocket, {"type": "raw_text", "data": text})
         return
 
-    valid = [
-        p
-        for p in plates
-        if p.get("plate") is not None and str(p.get("plate") or "").strip()
-    ]
+    valid = [p for p in plates if p.get("plate") is not None and str(p.get("plate") or "").strip()]
     if not valid:
         await _send(websocket, {"type": "no_plate", "data": {}})
         return
@@ -449,15 +537,13 @@ async def _process_plate_text(
         if not raw:
             continue
         plate_str = format_plate_display(raw) or raw
-        moving = bool(entry.get("moving"))
+        moving = _entry_moving(entry)
         found, _, _, _ = await _lookup_plate_outcome(session, raw)
-        sync_items.append(
-            {"plate": plate_str, "found": found, "moving": moving}
-        )
-        await _emit_model_plate_if_new(websocket, session, raw)
+        sync_items.append({"plate": plate_str, "found": found, "moving": moving})
+        await _emit_model_plate_if_new(websocket, session, entry)
 
     if sync_items:
-        await _emit_check_session_sync(websocket, sync_items)
+        await _emit_check_session_sync(websocket, _dedupe_sync_items_last_wins(sync_items))
 
 
 async def handle_client_messages(
@@ -485,9 +571,7 @@ async def handle_client_messages(
                                 "excel_error",
                             )
                             continue
-                        sheets_map, sheet_names = parse_excel_workbook_from_path(
-                            tmp_path, pw
-                        )
+                        sheets_map, sheet_names = parse_excel_workbook_from_path(tmp_path, pw)
                         if not sheet_names:
                             await _send_error(
                                 websocket,
@@ -526,9 +610,7 @@ async def handle_client_messages(
                             },
                         )
                     except Exception as e:
-                        await _send_error(
-                            websocket, f"خطأ في تحميل الملف: {e}", "excel_error"
-                        )
+                        await _send_error(websocket, f"خطأ في تحميل الملف: {e}", "excel_error")
                     finally:
                         if tmp_path:
                             try:
@@ -539,14 +621,10 @@ async def handle_client_messages(
                 elif msg_type == "set_plate_column":
                     col = (data.get("column") or "").strip()
                     if not session.excel_loaded or not session.excel_sheets:
-                        await _send_error(
-                            websocket, "ارفع ملف Excel أولاً.", "excel_error"
-                        )
+                        await _send_error(websocket, "ارفع ملف Excel أولاً.", "excel_error")
                         continue
                     sheets_map = session.excel_sheets
-                    if not col or not any(
-                        col in sheets_map[n][1] for n in sheets_map
-                    ):
+                    if not col or not any(col in sheets_map[n][1] for n in sheets_map):
                         await _send_error(
                             websocket,
                             "اختر عنوان عمود موجود في الملف.",
@@ -575,7 +653,10 @@ async def handle_client_messages(
 
                 elif msg_type == "audio":
                     if session.genai_session:
-                        await session.genai_session.send_audio(data.get("data", ""))
+                        b64 = data.get("data", "") or ""
+                        if isinstance(b64, str) and b64:
+                            session.live_audio_b64_chars += len(b64)
+                        await session.genai_session.send_audio(b64)
 
                 elif msg_type == "end_of_turn":
                     if session.genai_session:
@@ -588,9 +669,7 @@ async def handle_client_messages(
                     await _send(websocket, {"type": "pong", "data": {}})
 
             except Exception as e:
-                logger.error(
-                    "Client message error: %s\n%s", e, traceback.format_exc()
-                )
+                logger.error("Client message error: %s\n%s", e, traceback.format_exc())
     except WebSocketDisconnect:
         raise
 
@@ -601,6 +680,9 @@ async def handle_gemini_responses(websocket: WebSocket, session: SessionState) -
     try:
         async for msg in session.genai_session:
             try:
+                if isinstance(msg, dict):
+                    _merge_live_usage_metadata(session, msg)
+
                 if msg.get("serverContent", {}).get("interrupted"):
                     await _send(websocket, {"type": "interrupted", "data": {}})
                     session.text_buffer = ""
@@ -634,9 +716,8 @@ async def handle_gemini_responses(websocket: WebSocket, session: SessionState) -
                     if "text" in part:
                         session.text_buffer += part["text"]
 
-                # Latency note: plate_result may emit here (partial JSON). turnComplete + _process_plate_text
-                # sends check_session_sync; client also updates session rows on each miss plate_result.
-                # Try early parse on partial chunks (low latency), even before turnComplete.
+                # Low latency: emit as soon as the buffer parses (may duplicate turnComplete pass;
+                # client merges hits by plate; check_session_sync is de-duped on the server).
                 if session.text_buffer.strip():
                     blob_now = _strip_markdown_json_fence(session.text_buffer)
                     partial_plates = _parse_plate_payload(blob_now)
@@ -645,9 +726,7 @@ async def handle_gemini_responses(websocket: WebSocket, session: SessionState) -
 
                 if sc.get("turnComplete"):
                     if session.text_buffer.strip():
-                        await _process_plate_text(
-                            websocket, session, session.text_buffer
-                        )
+                        await _process_plate_text(websocket, session, session.text_buffer)
                     # Slice future STT at end of this turn so cumulative transcripts
                     # cannot re-match a plate from a previous user utterance.
                     session.transcript_turn_anchor = len(session.input_transcript or "")
@@ -659,9 +738,7 @@ async def handle_gemini_responses(websocket: WebSocket, session: SessionState) -
                     await _send(websocket, {"type": "turn_complete"})
 
             except Exception as e:
-                logger.error(
-                    "Gemini response error: %s\n%s", e, traceback.format_exc()
-                )
+                logger.error("Gemini response error: %s\n%s", e, traceback.format_exc())
     except Exception as e:
         if "connection closed" not in str(e).lower():
             logger.error("Gemini receive error: %s", e)
@@ -678,7 +755,9 @@ async def cleanup_session(session: Optional[SessionState], session_id: str) -> N
         logger.error("Cleanup error: %s", e)
 
 
-async def handle_plate_checker_client(websocket: WebSocket, user_id: int, is_admin: bool = False) -> None:
+async def handle_plate_checker_client(
+    websocket: WebSocket, user_id: int, is_admin: bool = False
+) -> None:
     session_key = ""
     session: SessionState | None = None
     logger.info("New Live check connection user_id=%s", user_id)
@@ -729,9 +808,7 @@ async def handle_plate_checker_client(websocket: WebSocket, user_id: int, is_adm
                 _schedule_idle_cleanup(session_key)
             )
             return
-        if not await asyncio.to_thread(
-            is_gemini_model_allowed_sync, "live", live_model
-        ):
+        if not await asyncio.to_thread(is_gemini_model_allowed_sync, "live", live_model):
             await _send_error(
                 websocket,
                 "موديل Live غير مسموح أو غير مفعّل.",
@@ -769,6 +846,13 @@ async def handle_plate_checker_client(websocket: WebSocket, user_id: int, is_adm
                             api_key, live_model=live_model
                         ) as gemini_session:
                             session.genai_session = gemini_session
+                            session.gemini_redis_key_id = key_id
+                            session.gemini_live_model = live_model
+                            session.live_connected_at = _utc_now()
+                            session.live_usage_prompt_tokens = 0
+                            session.live_usage_output_tokens = 0
+                            session.live_usage_total_tokens = 0
+                            session.live_audio_b64_chars = 0
                             await _send(websocket, {"type": "ready"})
                             connected_live = True
 
@@ -818,14 +902,29 @@ async def handle_plate_checker_client(websocket: WebSocket, user_id: int, is_adm
     except Exception as e:
         err = str(e)
         if "Quota" in err:
-            await _send_error(
-                websocket, "تم تجاوز الحصة، انتظر قليلاً.", "quota_exceeded"
-            )
+            await _send_error(websocket, "تم تجاوز الحصة، انتظر قليلاً.", "quota_exceeded")
         elif "connection closed" not in err.lower():
             logger.error("Session error: %s\n%s", e, traceback.format_exc())
             await _send_error(websocket, "حدث خطأ، حاول مرة أخرى.", "general")
     finally:
         if session_key and session:
+            kid = (session.gemini_redis_key_id or "").strip()
+            if kid:
+                try:
+                    await asyncio.to_thread(
+                        flush_live_gemini_usage_for_session_sync,
+                        session,
+                        session_key,
+                    )
+                except Exception:
+                    logger.exception("Live Gemini usage flush failed for %s", session_key)
+            session.gemini_redis_key_id = ""
+            session.gemini_live_model = ""
+            session.live_connected_at = None
+            session.live_usage_prompt_tokens = 0
+            session.live_usage_output_tokens = 0
+            session.live_usage_total_tokens = 0
+            session.live_audio_b64_chars = 0
             session.connected = False
             session.genai_session = None
             touch_session(session_key)

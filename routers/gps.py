@@ -1,21 +1,17 @@
+import asyncio
 import io
 import json
 import logging
 import os
 from datetime import datetime
-
-import openpyxl
-from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
-from fastapi import APIRouter, Depends, Form, File, UploadFile, HTTPException
-from fastapi.responses import StreamingResponse, JSONResponse
 from urllib.parse import quote
 
+import openpyxl
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi.responses import JSONResponse, StreamingResponse
+from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+
 from dependencies.auth import get_current_user
-from services.plate_utils import (
-    normalize_plate,
-    auto_detect_plate_col,
-    auto_detect_plate_col_from_row3,
-)
 from services.excel_utils import (
     apply_excel_style,
     find_best_sheet_async,
@@ -23,8 +19,12 @@ from services.excel_utils import (
     load_workbook_maybe_encrypted_from_path_async,
     workbook_to_bytes_async,
 )
+from services.plate_utils import (
+    auto_detect_plate_col,
+    auto_detect_plate_col_from_row3,
+    normalize_plate,
+)
 from services.upload_security import MAX_EXCEL_BYTES, save_upload_to_temp_with_limit
-
 
 logger = logging.getLogger(__name__)
 
@@ -44,10 +44,10 @@ def _cell_val(row, ci):
 
 @router.post("/parse-gps-excel")
 async def parse_gps_excel(
-    file:      UploadFile = File(...),
-    label_col: str        = Form(""),
-    gps_col:   str        = Form("GPS"),
-    label_cols_json: str  = Form(""),
+    file: UploadFile = File(...),
+    label_col: str = Form(""),
+    gps_col: str = Form("GPS"),
+    label_cols_json: str = Form(""),
 ):
     tmp_path = await save_upload_to_temp_with_limit(
         file,
@@ -82,30 +82,28 @@ async def parse_gps_excel(
                 detail="لا يوجد عمود GPS أو موقع الشارع في الملف",
             )
 
-        label_col  = label_col.strip()
-        label_idx  = (
-            headers.index(label_col)
-            if label_col and label_col in headers
-            else None
-        )
+        label_col = label_col.strip()
+        label_idx = headers.index(label_col) if label_col and label_col in headers else None
 
         label_cols: list[str] = []
         if label_cols_json.strip():
             try:
                 raw = json.loads(label_cols_json)
                 if isinstance(raw, list):
-                    label_cols = [str(x).strip() for x in raw if str(x).strip() and str(x).strip() in headers]
+                    label_cols = [
+                        str(x).strip() for x in raw if str(x).strip() and str(x).strip() in headers
+                    ]
             except Exception:
                 label_cols = []
 
-        points  = []
+        points = []
         skipped = 0
 
         for row in rows[1:]:
             if all(c is None for c in row):
                 continue
             raw = row[gps_idx] if gps_idx < len(row) else None
-            s   = str(raw).strip() if raw is not None else ""
+            s = str(raw).strip() if raw is not None else ""
             if not s or "," not in s:
                 skipped += 1
                 continue
@@ -118,9 +116,7 @@ async def parse_gps_excel(
                 lng = float(parts[1].strip())
                 label_val = (
                     str(row[label_idx]).strip()
-                    if label_idx is not None
-                    and label_idx < len(row)
-                    and row[label_idx] is not None
+                    if label_idx is not None and label_idx < len(row) and row[label_idx] is not None
                     else ""
                 )
                 fields = {}
@@ -131,24 +127,28 @@ async def parse_gps_excel(
                     else:
                         fields[c] = ""
 
-                points.append({
-                    "lat": lat,
-                    "lng": lng,
-                    "label": label_val,
-                    "fields": fields,
-                    "gps_col_used": gps_col,
-                })
+                points.append(
+                    {
+                        "lat": lat,
+                        "lng": lng,
+                        "label": label_val,
+                        "fields": fields,
+                        "gps_col_used": gps_col,
+                    }
+                )
             except Exception:
                 skipped += 1
 
-        return JSONResponse({
-            "points":        points,
-            "total":         len(points),
-            "skipped":       skipped,
-            "headers":       [h for h in headers if h],
-            "label_col_used": headers[label_idx] if label_idx is not None else "",
-            "gps_col_used":  gps_col,
-        })
+        return JSONResponse(
+            {
+                "points": points,
+                "total": len(points),
+                "skipped": skipped,
+                "headers": [h for h in headers if h],
+                "label_col_used": headers[label_idx] if label_idx is not None else "",
+                "gps_col_used": gps_col,
+            }
+        )
 
     except HTTPException:
         raise
@@ -168,13 +168,13 @@ async def parse_gps_excel(
 
 @router.post("/check-gps-data")
 async def check_gps_data(
-    large_file:  UploadFile = File(...),
-    small_file:  UploadFile = File(...),
-    password:    str        = Form(""),
-    large_col:   str        = Form(""),
-    small_col:   str        = Form(""),
-    large_sheet: str        = Form(""),
-    small_sheet: str        = Form(""),
+    large_file: UploadFile = File(...),
+    small_file: UploadFile = File(...),
+    password: str = Form(""),
+    large_col: str = Form(""),
+    small_col: str = Form(""),
+    large_sheet: str = Form(""),
+    small_sheet: str = Form(""),
 ):
     large_wb = None
     small_wb = None
@@ -346,7 +346,7 @@ async def check_gps_data(
 @router.post("/parse-ref-plates")
 async def parse_ref_plates(
     file: UploadFile = File(...),
-    col:  str        = Form(""),
+    col: str = Form(""),
 ):
     tmp_path = await save_upload_to_temp_with_limit(
         file,
@@ -358,12 +358,12 @@ async def parse_ref_plates(
     try:
         wb = await load_workbook_from_path_async(tmp_path)
         ws = await find_best_sheet_async(wb)
-        rows    = list(ws.iter_rows(values_only=True))
+        rows = list(ws.iter_rows(values_only=True))
         if not rows:
             return JSONResponse({"plates": [], "total": 0, "col_used": ""})
 
         headers = [str(h).strip() if h is not None else "" for h in rows[0]]
-        col     = col.strip()
+        col = col.strip()
         col_idx = None
 
         if col and col in headers:
@@ -376,9 +376,9 @@ async def parse_ref_plates(
             return JSONResponse(
                 status_code=422,
                 content={
-                    "detail":  f"لم يُعثر على عمود اللوحة. الأعمدة: {headers}",
+                    "detail": f"لم يُعثر على عمود اللوحة. الأعمدة: {headers}",
                     "headers": headers,
-                    "code":    "COL_NOT_FOUND",
+                    "code": "COL_NOT_FOUND",
                 },
             )
 
@@ -390,11 +390,13 @@ async def parse_ref_plates(
             if val is not None and str(val).strip():
                 plates.append(str(val).strip())
 
-        return JSONResponse({
-            "plates":   plates,
-            "total":    len(plates),
-            "col_used": headers[col_idx],
-        })
+        return JSONResponse(
+            {
+                "plates": plates,
+                "total": len(plates),
+                "col_used": headers[col_idx],
+            }
+        )
 
     except Exception:
         # SECURITY FIX: hiding internal exception details from client
@@ -433,12 +435,14 @@ async def check_ref_plate(
         ws = await find_best_sheet_async(wb)
         rows = list(ws.iter_rows(values_only=True))
         if not rows:
-            return JSONResponse({
-                "exists": False,
-                "matched_plate": "",
-                "total_scanned": 0,
-                "col_used": "",
-            })
+            return JSONResponse(
+                {
+                    "exists": False,
+                    "matched_plate": "",
+                    "total_scanned": 0,
+                    "col_used": "",
+                }
+            )
 
         headers = [str(h).strip() if h is not None else "" for h in rows[0]]
         selected_col = (col or "").strip()
@@ -476,12 +480,14 @@ async def check_ref_plate(
                 matched_plate = raw_val
                 break
 
-        return JSONResponse({
-            "exists": bool(matched_plate),
-            "matched_plate": matched_plate,
-            "total_scanned": total_scanned,
-            "col_used": headers[col_idx],
-        })
+        return JSONResponse(
+            {
+                "exists": bool(matched_plate),
+                "matched_plate": matched_plate,
+                "total_scanned": total_scanned,
+                "col_used": headers[col_idx],
+            }
+        )
     except HTTPException:
         raise
     except Exception:
@@ -501,13 +507,13 @@ async def check_ref_plate(
 @router.post("/export-gps-excel")
 async def export_gps_excel(
     results_json: str = Form("[]"),
-    failed_json:  str = Form("[]"),
-    my_lat:       str = Form(""),
-    my_lon:       str = Form(""),
+    failed_json: str = Form("[]"),
+    my_lat: str = Form(""),
+    my_lon: str = Form(""),
 ):
     try:
         results = json.loads(results_json)
-        failed  = json.loads(failed_json)
+        failed = json.loads(failed_json)
     except Exception:
         raise HTTPException(status_code=400, detail="تنسيق JSON خاطئ")
 
@@ -516,41 +522,49 @@ async def export_gps_excel(
     ws.title = "أقرب المركبات"
     ws.sheet_view.rightToLeft = True
 
-    hf     = Font(name="Arial", bold=True, color="FFFFFF", size=12)
-    hfill  = PatternFill("solid", start_color="0D6B5E")
-    ha     = Alignment(horizontal="center", vertical="center")
-    ca     = Alignment(horizontal="center", vertical="center", wrap_text=True)
-    df     = Font(name="Arial", size=11)
+    hf = Font(name="Arial", bold=True, color="FFFFFF", size=12)
+    hfill = PatternFill("solid", start_color="0D6B5E")
+    ha = Alignment(horizontal="center", vertical="center")
+    ca = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    df = Font(name="Arial", size=11)
     lf_map = Font(name="Arial", size=11, color="0563C1", underline="single")
-    thin   = Side(style="thin", color="BFBFBF")
-    brd    = Border(left=thin, right=thin, top=thin, bottom=thin)
-    fe     = PatternFill("solid", start_color="E0F2F1")
-    fo     = PatternFill("solid", start_color="FFFFFF")
+    thin = Side(style="thin", color="BFBFBF")
+    brd = Border(left=thin, right=thin, top=thin, bottom=thin)
+    fe = PatternFill("solid", start_color="E0F2F1")
+    fo = PatternFill("solid", start_color="FFFFFF")
     rank1f = PatternFill("solid", start_color="C8E6C9")
 
-    headers    = ["#", "رقم اللوحة", "الخريطة", "النوع", "ملاحظات",
-                  "المسافة (km)", "الوقت (دقيقة)", "تاريخ التسجيل"]
+    headers = [
+        "#",
+        "رقم اللوحة",
+        "الخريطة",
+        "النوع",
+        "ملاحظات",
+        "المسافة (km)",
+        "الوقت (دقيقة)",
+        "تاريخ التسجيل",
+    ]
     col_widths = [5, 22, 28, 14, 22, 14, 14, 20]
 
     for col, h in enumerate(headers, 1):
         cell = ws.cell(row=1, column=col, value=h)
-        cell.font = hf; cell.fill = hfill
-        cell.alignment = ha; cell.border = brd
+        cell.font = hf
+        cell.fill = hfill
+        cell.alignment = ha
+        cell.border = brd
     ws.row_dimensions[1].height = 30
 
     for i, r in enumerate(results, 1):
-        fill     = rank1f if r.get("rank") == 1 else (fe if i % 2 == 0 else fo)
-        gps      = r.get("gps", "")
+        fill = rank1f if r.get("rank") == 1 else (fe if i % 2 == 0 else fo)
+        gps = r.get("gps", "")
         maps_url = ""
 
         if gps and "," in gps and my_lat and my_lon:
             parts = gps.split(",")
             try:
-                vlat     = float(parts[0].strip())
-                vlng     = float(parts[1].strip())
-                maps_url = (
-                    f"https://www.google.com/maps/dir/{my_lat},{my_lon}/{vlat},{vlng}"
-                )
+                vlat = float(parts[0].strip())
+                vlng = float(parts[1].strip())
+                maps_url = f"https://www.google.com/maps/dir/{my_lat},{my_lon}/{vlat},{vlng}"
             except Exception:
                 pass
 
@@ -567,14 +581,15 @@ async def export_gps_excel(
 
         for col, v in enumerate(row_vals, 1):
             cell = ws.cell(row=i + 1, column=col, value=v)
-            cell.border = brd; cell.fill = fill
+            cell.border = brd
+            cell.fill = fill
             if col == 3 and maps_url:
-                cell.value     = "📍 فتح الخريطة"
+                cell.value = "📍 فتح الخريطة"
                 cell.hyperlink = maps_url
-                cell.font      = lf_map
+                cell.font = lf_map
                 cell.alignment = ca
             else:
-                cell.font      = df
+                cell.font = df
                 cell.alignment = ca
 
     for idx, w in enumerate(col_widths):
@@ -588,22 +603,26 @@ async def export_gps_excel(
             [
                 {
                     "رقم اللوحة": f.get("plate", ""),
-                    "GPS":         f.get("gps",   ""),
-                    "السبب":       f.get("reason", ""),
+                    "GPS": f.get("gps", ""),
+                    "السبب": f.get("reason", ""),
                 }
                 for f in failed
             ],
         )
 
     ws_s = wb.create_sheet("ملخص")
-    apply_excel_style(ws_s, ["البند", "القيمة"], [
-        {"البند": "موقع المستخدم",          "القيمة": f"{my_lat}, {my_lon}"},
-        {"البند": "إجمالي مركبات مطابَقة",  "القيمة": len(results)},
-        {"البند": "مركبات فشلت",             "القيمة": len(failed)},
-        {"البند": "أقرب مركبة",              "القيمة": results[0]["plate"]        if results else "—"},
-        {"البند": "أقل مسافة (km)",          "القيمة": results[0]["distance_km"]  if results else "—"},
-        {"البند": "أقل وقت (دقيقة)",         "القيمة": results[0]["duration_min"] if results else "—"},
-    ])
+    apply_excel_style(
+        ws_s,
+        ["البند", "القيمة"],
+        [
+            {"البند": "موقع المستخدم", "القيمة": f"{my_lat}, {my_lon}"},
+            {"البند": "إجمالي مركبات مطابَقة", "القيمة": len(results)},
+            {"البند": "مركبات فشلت", "القيمة": len(failed)},
+            {"البند": "أقرب مركبة", "القيمة": results[0]["plate"] if results else "—"},
+            {"البند": "أقل مسافة (km)", "القيمة": results[0]["distance_km"] if results else "—"},
+            {"البند": "أقل وقت (دقيقة)", "القيمة": results[0]["duration_min"] if results else "—"},
+        ],
+    )
 
     content = await workbook_to_bytes_async(wb)
     ts = datetime.now().strftime("%Y%m%d_%H%M")
@@ -612,9 +631,7 @@ async def export_gps_excel(
 
     return StreamingResponse(
         io.BytesIO(content),
-        media_type=(
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        ),
+        media_type=("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
         headers={
             "Content-Disposition": (
                 f'attachment; filename="nearest_vehicles_{ts}.xlsx"; '

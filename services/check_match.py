@@ -18,17 +18,17 @@ import openpyxl
 from openpyxl.cell import WriteOnlyCell
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 
+from services.excel_utils import (
+    find_best_sheet,
+    load_workbook_maybe_encrypted,
+    workbook_to_bytes,
+)
 from services.plate_utils import (
     auto_detect_plate_col,
-    auto_detect_plate_col_from_rows,
     auto_detect_plate_col_from_row3,
+    auto_detect_plate_col_from_rows,
     format_plate_display,
     normalize_plate,
-)
-from services.excel_utils import (
-    load_workbook_maybe_encrypted,
-    find_best_sheet,
-    workbook_to_bytes,
 )
 
 logger = logging.getLogger(__name__)
@@ -104,17 +104,13 @@ def _sqlite_connect(path: str) -> sqlite3.Connection:
 
 def _sqlite_init_index(con: sqlite3.Connection) -> None:
     con.execute(
-        "CREATE TABLE IF NOT EXISTS plate_idx ("
-        "plate_key TEXT NOT NULL, "
-        "payload_json TEXT NOT NULL)"
+        "CREATE TABLE IF NOT EXISTS plate_idx (plate_key TEXT NOT NULL, payload_json TEXT NOT NULL)"
     )
     con.execute("CREATE INDEX IF NOT EXISTS idx_plate_key ON plate_idx(plate_key)")
     con.commit()
 
 
-def _sqlite_insert_batch(
-    con: sqlite3.Connection, rows: list[tuple[str, str]]
-) -> None:
+def _sqlite_insert_batch(con: sqlite3.Connection, rows: list[tuple[str, str]]) -> None:
     if not rows:
         return
     con.executemany(
@@ -189,9 +185,7 @@ def run_check_plates_sync(
             raise
 
         try:
-            small_wb = openpyxl.load_workbook(
-                io.BytesIO(sc_bytes), read_only=True, data_only=True
-            )
+            small_wb = openpyxl.load_workbook(io.BytesIO(sc_bytes), read_only=True, data_only=True)
         except Exception as e:
             raise ValueError(f"تعذّر فتح الملف الصغير: {e}") from e
 
@@ -296,9 +290,9 @@ def run_check_plates_sync(
         matched_plate_hits = 0
         unmatched_plates = 0
 
-        display_headers: list[str] = [
-            _strip_small_word_from_header_title(c) for c in le_cols
-        ] + [_strip_small_word_from_header_title(c) for c in se_cols]
+        display_headers: list[str] = [_strip_small_word_from_header_title(c) for c in le_cols] + [
+            _strip_small_word_from_header_title(c) for c in se_cols
+        ]
         col_sources: list[str] = ["large"] * len(le_cols) + ["small"] * len(se_cols)
 
         lc_n = _norm_hdr_sim(lc)
@@ -362,9 +356,7 @@ def run_check_plates_sync(
             if sc in se_cols:
                 pi = se_cols.index(sc)
                 sv = list(small_vals)
-                disp = format_plate_display(norm) or (
-                    str(rp).strip() if rp is not None else ""
-                )
+                disp = format_plate_display(norm) or (str(rp).strip() if rp is not None else "")
                 if 0 <= pi < len(sv):
                     sv[pi] = disp
                 small_vals = tuple(sv)

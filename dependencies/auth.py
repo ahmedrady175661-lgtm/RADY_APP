@@ -6,7 +6,7 @@ from config import settings
 from db import get_db
 from models import User
 from services.security import decode_token
-
+from services.subscription import deactivate_expired_subscription
 
 optional_bearer = HTTPBearer(auto_error=False)
 
@@ -42,11 +42,14 @@ def get_current_user(
 
     subject = payload.get("sub")
     if not subject or not str(subject).isdigit():
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token subject")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token subject"
+        )
 
     user = db.get(User, int(subject))
     if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+    deactivate_expired_subscription(db, user)
     if not user.is_active:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account is disabled")
     # Enforce single-device usage for non-admin users on all authenticated routes.
@@ -70,7 +73,9 @@ def require_admin(current_user: User = Depends(get_current_user)) -> User:
     return current_user
 
 
-def require_device_header(x_device_id: str | None = Header(default=None, alias="X-Device-Id")) -> str:
+def require_device_header(
+    x_device_id: str | None = Header(default=None, alias="X-Device-Id"),
+) -> str:
     if not x_device_id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

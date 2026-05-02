@@ -1,9 +1,16 @@
 import re
 
-
 PLATE_COL_PATTERNS = [
-    "رقم اللوحة", "رقم اللوحه", "اللوحة", "اللوحه",
-    "لوحة", "لوحه", "رقم اللوح", "full_plate", "plate", "plate no"
+    "رقم اللوحة",
+    "رقم اللوحه",
+    "اللوحة",
+    "اللوحه",
+    "لوحة",
+    "لوحه",
+    "رقم اللوح",
+    "full_plate",
+    "plate",
+    "plate no",
 ]
 
 _AR_HARAKAT_TATWEEL = re.compile(r"[\u0640\u064B-\u065F\u0670]")
@@ -38,7 +45,7 @@ def _digits_western_from_chars(s: str) -> str:
             out.append(ch)
         elif "\u0660" <= ch <= "\u0669":
             out.append(str(ord(ch) - 0x0660))
-        elif "\u06F0" <= ch <= "\u06F9":
+        elif "\u06f0" <= ch <= "\u06f9":
             out.append(str(ord(ch) - 0x06F0))
     return "".join(out)
 
@@ -71,9 +78,7 @@ def _plate_from_compact(compact: str) -> tuple[str, bool]:
 
 
 def normalize_plate_value(
-    letters_raw: str = "",
-    numbers_raw: str = "",
-    full_raw: str = ""
+    letters_raw: str = "", numbers_raw: str = "", full_raw: str = ""
 ) -> tuple[str, bool]:
     """
     Normalize plate:
@@ -94,9 +99,7 @@ def normalize_plate_value(
         if not numbers:
             numbers = re.sub(r"\D+", "", _digits_western_from_chars(compact))
 
-    is_valid = bool(
-        letters and numbers and len(letters) <= 3 and len(numbers) <= 4
-    )
+    is_valid = bool(letters and numbers and len(letters) <= 3 and len(numbers) <= 4)
     return (f"{letters}{numbers}" if is_valid else "", is_valid)
 
 

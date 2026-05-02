@@ -60,9 +60,7 @@ def get_sync_redis():
 
 def next_midnight_utc_ts() -> float:
     now = datetime.now(timezone.utc)
-    tomorrow = datetime.combine(now.date(), time.min, tzinfo=timezone.utc) + timedelta(
-        days=1
-    )
+    tomorrow = datetime.combine(now.date(), time.min, tzinfo=timezone.utc) + timedelta(days=1)
     return tomorrow.timestamp()
 
 
@@ -176,9 +174,7 @@ def has_any_key(r, kind: str) -> bool:
     return r.llen(_order_key(kind)) > 0
 
 
-def iter_round_robin(
-    r, kind: str
-) -> Iterator[tuple[str, str]]:
+def iter_round_robin(r, kind: str) -> Iterator[tuple[str, str]]:
     """
     One full cycle of RPOPLPUSH over the order list, skipping parked keys.
     Yields (key_id, secret) for each active entry once per generator run.

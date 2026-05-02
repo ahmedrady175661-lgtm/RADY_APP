@@ -1,4 +1,4 @@
-// ── التشيك (قديم الفرز): ملفان + Match + GPS
+// صفحة «الفرز» (_om_field): ملف Excel كبير + صغير، مطابقة، ثم GPS اختياري — منطق الواجهة مرتبط بعناصر id تبدأ بـ om*
 let omCheckLargeFile=null,omCheckSmallFile=null,omCheckResultBlob=null;
 let omCheckDetected={large:null,small:null},omCheckLargeHasGps=false,omGpsResultBlob=null;
 let omPostgresLargeEnabled=false,omUseStoredLarge=false;
@@ -257,14 +257,6 @@ function omClearLargeExcelFromClient(){
   omResetColDropdown('large');
   omSetBadge('large','pending','\u2014');
   omClearCheckExportList('large');
-}
-
-async function omOnToggleStoredLarge(){
-  omUseStoredLarge=true;
-  omResetCheckDetect();
-  await omDetectColForSide('large');
-  await omRenderStoredImportsList();
-  omCheckRunReady();
 }
 
 async function omImportLargeToServer(){

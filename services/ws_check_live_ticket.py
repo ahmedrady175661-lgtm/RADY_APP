@@ -27,6 +27,7 @@ class WsTicketRedisRequired(Exception):
         self.detail = detail
         super().__init__(detail)
 
+
 # Redis: GET+DEL in one script so the ticket is consumed exactly once.
 _REDIS_CONSUME_LUA = """
 local v = redis.call('GET', KEYS[1])

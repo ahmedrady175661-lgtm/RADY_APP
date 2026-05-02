@@ -1,0 +1,158 @@
+================================================================================
+تقرير المرحلة 1 + 2 — جرد نقاط الدخول + تحليل ثابت (بدون حذف كود)
+تاريخ التوليد: 2026-05-02
+================================================================================
+
+نطاق مستثنى (حسب الطلب)
+------------------------
+- لا يُفترض البحث عن استدعاءات API أو كود ميت داخل حزمة Flutter:
+  mobile_app.zip ، مجلد mobile_app/ (إن وُجد) ، وأي شجرة Flutter خارج هذا الريبو.
+- هذا التقرير يغطي بايثون FastAPI + static/ فقط.
+
+================================================================================
+المرحلة 1 — خريطة التطبيق ونقاط الدخول
+================================================================================
+
+1) تشغيل الخادم
+   - الأمر النموذجي: uvicorn main:app --host 0.0.0.0 --port <PORT>
+   - من main.py مباشرة: python main.py (يستخدم settings.port و settings.debug)
+
+2) ملف التطبيق الرئيسي: main.py
+   - إنشاء FastAPI(title, version, docs_url=/docs, redoc_url=/redoc, lifespan=lifespan)
+   - التحقق من الأمان عند الاستيراد: _validate_sensitive_settings() ، _validate_redis_for_multiworker()
+   - CORS من settings.allowed_origins_list
+   - SlowAPI: app.state.limiter ، معالج RateLimitExceeded
+   - Lifespan (async):
+       * job_store.init_job_store / close
+       * gemini.init_http_client / close_http_client
+       * start_check_queue(process_check_queue_item) / stop_check_queue
+       * اختياري: ensure_check_pg_schema إن وُجد CHECK_POSTGRES_URL
+       * _startup_db_sync (create_all، migrations، bootstrap_admin)
+
+3) مسارات HTTP عليا (غير الموجودة في routers/)
+   - GET  /health
+   - GET  /              → index.html من static/
+   - GET  /admin/check-storage → admin-check-storage.html
+   - Mount: /static → StaticFiles(settings.static_dir)
+     ملفات مهمة للواجهة: static/index.html ، static/_om_field.js ، static/admin-check-storage.html
+
+4) Routers المضمّنة في app (main.py) مع البادئات / الوسوم
+   - audio_router        prefix=/api          tags=audio        (اعتماد get_current_user على المستوى)
+   - excel_router        prefix=/api          tags=excel
+   - check_router        prefix=/api          tags=check
+   - check_live_ticket_router   prefix=/api/check-live   tags=check-live
+   - check_live_upload_router   prefix=/api/check-live   tags=check-live
+   - check_live_ws_router       (بدون prefix على الـ APIRouter) → WebSocket /ws/check-live
+   - gps_router          prefix=/api          tags=gps
+   - auth_router         prefix=/auth         tags=auth
+   - admin_router        prefix=/admin        tags=admin
+   - admin_provider_router      prefix=/admin/provider   tags=admin-provider
+   - public_config_router       prefix=/api/config       tags=config
+   - proxy_ors_router           prefix=/api/proxy        tags=proxy
+   - admin_check_storage_router prefix=/api/admin/check-storage tags=admin-check-storage
+
+5) حزم بايثون تطبيقية (للمراجعة اليدوية لاحقاً، ليست قائمة endpoints)
+   - core/          (gemini_client، plate_checker_ws، session، excel_loader)
+   - dependencies/ (auth)
+   - models/ ، schemas/ ، services/
+   - db.py ، config.py
+   - scripts/load_test_local.py — سكربت تحميل، قد يُستدعى يدوياً فقط
+
+6) ملاحظة routers/__init__.py
+   - يصدّر audio, excel, check, gps فقط؛ الـ main يستورد باقي المسارات مباشرة من ملفات فرعية.
+
+================================================================================
+المرحلة 2 — تحليل ثابت (تقرير أولي + تصنيف)
+================================================================================
+
+أداة 1: Ruff (F401 غير مستخدم، F841 متغير غير مستخدم)
+الأمر المستخدم (من جذر الريبو، مع venv يحوي ruff):
+  ruff check . --select F401,F841
+
+النتيجة: 20 خطأ (8 منها يصلحها ruff --fix تلقائياً حسب الرسالة).
+
+قائمة الملفات والمشكلات (ملخص):
+  - core/excel_loader.py:8 — F401 format_plate_display غير مستخدم
+  - models/__init__.py — F401 لكل من User, UserGroup, RefreshToken, GeminiModelCatalog,
+      GeminiModelPricing, GeminiUsageEvent (استيرادات «واجهة حزمة» غالباً مقصودة)
+  - routers/check.py:13 — F401 FileResponse غير مستخدم
+  - routers/excel.py — F401 datetime, apply_excel_style غير مستخدمين
+  - schemas/__init__.py — F401 لعدة أنواع من .auth و .user (نفس نمط re-export)
+  - services/check_postgres.py:753 — F841 متغير محلي lh غير مستخدم (مراجعة يدوية)
+  - services/check_temp_storage.py — F401: io, json, datetime, openpyxl غير مستخدمة
+
+تصنيف سريع (triage):
+  [آمن غالباً للإصلاح] إزالة imports فعلية غير مستخدمة: excel_loader، check.py، excel.py، check_temp_storage.
+  [يحتاج قرار تصميم] models/__init__.py و schemas/__init__.py: إما إضافة __all__ صريح، أو تعليقات noqa،
+      أو إبقاء الوضع إذا كان الهدف تجميع النماذج/الـ schemas للاستيراد من خارج الحزمة.
+  [يدوي] F841 في check_postgres.py — تحقق من نية المتغير أو استبداله بـ _.
+
+أداة 2: Vulture
+مهم: تشغيل vulture على «.» كامل يسحب .pyuserbase و site-packages ويعطي نتائج غير ذات صلة.
+
+الأمر الموصى به (كود التطبيق فقط، بدون Flutter):
+  vulture main.py config.py db.py core dependencies models routers schemas services scripts/load_test_local.py --min-confidence 80
+  → لا نتائج على شجرة المشروع الحالية (exit 0).
+
+عند خفض العتبة (--min-confidence 50) تظهر مئات «الوهميات» المعروفة:
+  - دوال مسجّلة كـ FastAPI routes (vulture لا يرى استدعاءً مباشراً)
+  - حقول Pydantic / إعدادات Settings داخلية
+  - خصائص تُملأ ديناميكياً على كائنات الجلسة (plate_checker_ws، session)
+  → لا تُستخدم هذه القائمة لحذف جماعي.
+
+================================================================================
+المرحلة 3 — جودة بايثون (ruff كامل، بدون vulture حذف جماعي)
+تاريخ: 2026-05-02
+================================================================================
+- تشغيل: ruff check . (القواعد الافتراضية) على شجرة المشروع.
+- F821 routers/check_live_ws.py: في كتلتي except كان يُسجَّل user.id بينما المتغير
+  المعروف في النطاق هو user_id — تم استبداله بـ user_id في رسائل السجل.
+- E702 routers/excel.py و routers/gps.py: فصل إسنادات خلايا openpyxl التي كانت على
+  سطر واحد بفاصلة منقوطة إلى أسطر متتالية (متوافق مع pycodestyle E702).
+- النتيجة الحالية: ruff check . بدون أخطاء.
+- ما زال مستثنىً من البحث عن كود ميت في الواجهة المحمولة: Flutter / mobile_app.
+
+ملاحظة: إصلاحات F401/F841 (المرحلة السابقة من التنظيف) طُبّقت قبل المرحلة 3.
+
+================================================================================
+المرحلة 4 — تثبيت أسلوب المشروع (Ruff config + تنسيق + isort)
+تاريخ: 2026-05-02
+================================================================================
+- إضافة pyproject.toml:
+  * [tool.ruff] target-version = py39 ، line-length = 100 ، src = ["."]
+  * [tool.ruff.format] quote-style double ، indent-style space
+  * [tool.ruff.lint] extend-select = ["I"] (ترتيب الاستيرادات مع بقية القواعد الافتراضية)
+  * per-file-ignores: core/gemini_client.py = E501 (نصوص prompt طويلة)
+- تشغيل ruff format . على شجرة البايثون (توحيد الأسطر والاقتباس والمسافات).
+- تشغيل ruff check . --fix (إصلاحات تلقائية، منها I001 وغيرها حيث أمكن).
+- التحقق: ruff check . و ruff format --check . ينجحان.
+- لم يُفعّل SIM105 في الإعداد الافتراضي: يتطلب استبدال try/except/pass بعدد كبير من
+  المواضع (بما فيها async) ويُرجّح معالجته لاحقاً بـ PR منفصل إن رغبت.
+- Flutter / mobile_app ما زال خارج نطاق التنظيف.
+
+================================================================================
+المرحلة 5 — أتمتة الفحص (pre-commit + GitHub Actions)
+تاريخ: 2026-05-02
+================================================================================
+- pyproject.toml: إضافة exclude لـ .audit_venv و .venv و venv و __pycache__ حتى لا يمس
+  Ruff شجرة الاعتمادات المحلية عند التشغيل من جذر الريبو.
+- .pre-commit-config.yaml: خطافات astral-sh/ruff-pre-commit (rev v0.15.12)
+  — ruff --fix ثم ruff-format؛ استثناء مجلدات الـ venv و mobile_app من الـ hook.
+- .github/workflows/ruff.yml: على push و pull_request — تثبيت ruff، ثم
+  ruff format --check . ثم ruff check .
+- التشغيل المحلي للـ hooks (مرة بعد الاستنساخ):
+    pip install pre-commit && pre-commit install
+    pre-commit run --all-files
+- Flutter / mobile_app ما زال خارج نطاق التنظيف؛ الاستثناء يقلل لمس المجلدات غير البايثون.
+
+================================================================================
+متابعة اختيارية
+================================================================================
+- ربط فرع الحماية (branch protection) بطلب نجاح workflow Ruff على GitHub.
+- عدم مسح endpoints بناءً على vulture منخفض الثقة.
+
+================================================================================
+بيئة التشغيل المستخدمة لتوليد التقرير
+================================================================================
+- تم إنشاء venv محلي داخل الريبو: .audit_venv/ (مُدرَج في .gitignore) لتثبيت ruff و vulture.
+- لإعادة التشغيل: python3 -m venv .audit_venv && . .audit_venv/bin/activate && pip install ruff vulture

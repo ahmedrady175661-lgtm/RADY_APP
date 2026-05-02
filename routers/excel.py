@@ -3,19 +3,17 @@ import io
 import json
 import logging
 import os
-from datetime import datetime
-
-import openpyxl
-from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
-from fastapi import APIRouter, Depends, Form, File, UploadFile, HTTPException
-from fastapi.responses import StreamingResponse, JSONResponse
-
-from dependencies.auth import get_current_user
-from services.plate_utils import normalize_plate_value
-from services.excel_utils import apply_excel_style, workbook_to_bytes_async
-from services.upload_security import MAX_EXCEL_BYTES, save_upload_to_temp_with_limit
 from urllib.parse import quote
 
+import openpyxl
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi.responses import JSONResponse, StreamingResponse
+from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+
+from dependencies.auth import get_current_user
+from services.excel_utils import workbook_to_bytes_async
+from services.plate_utils import normalize_plate_value
+from services.upload_security import MAX_EXCEL_BYTES, save_upload_to_temp_with_limit
 
 logger = logging.getLogger(__name__)
 
@@ -53,9 +51,10 @@ _CHECK_SESSION_EXPORT_HEADERS_SET = {h.strip() for h in _CHECK_SESSION_EXPORT_HE
 
 
 def _clean_sheet_name(name: str) -> str:
-    for ch in r'/\?*[]':
+    for ch in r"/\?*[]":
         name = name.replace(ch, "")
     return (name or "بيانات المركبات")[:31]
+
 
 def _content_disposition(filename_utf8: str, fallback_ascii: str = "export.xlsx") -> str:
     """
@@ -63,7 +62,8 @@ def _content_disposition(filename_utf8: str, fallback_ascii: str = "export.xlsx"
     Provide an ASCII fallback filename for older clients.
     """
     encoded = quote(filename_utf8, safe="")
-    return f'attachment; filename="{fallback_ascii}"; filename*=UTF-8\'\'{encoded}'
+    return f"attachment; filename=\"{fallback_ascii}\"; filename*=UTF-8''{encoded}"
+
 
 def _mid_gps_value(valid_rows: list[dict]) -> str:
     """
@@ -104,11 +104,11 @@ def _parse_append_excel_sync(source: bytes | str) -> tuple[list[dict], int]:
             raise ValueError("الملف فارغ")
         headers = [str(c).strip() if c is not None else "" for c in header_row]
         headers_no_empty = [h for h in headers if h]
-        if len(headers_no_empty) != len(_EXPORT_HEADERS_SET) or set(headers_no_empty) != _EXPORT_HEADERS_SET:
-            raise ValueError(
-                "أعمدة الملف غير مطابقة. المطلوب فقط: "
-                + "، ".join(_EXPORT_HEADERS)
-            )
+        if (
+            len(headers_no_empty) != len(_EXPORT_HEADERS_SET)
+            or set(headers_no_empty) != _EXPORT_HEADERS_SET
+        ):
+            raise ValueError("أعمدة الملف غير مطابقة. المطلوب فقط: " + "، ".join(_EXPORT_HEADERS))
         idx = {h: headers.index(h) for h in _EXPORT_HEADERS}
         out: list[dict] = []
         for row in rows_iter:
@@ -128,7 +128,7 @@ def _parse_append_excel_sync(source: bytes | str) -> tuple[list[dict], int]:
                     "recording_date": cell("تاريخ التسجيل"),
                     "district_name": cell("الحي"),
                     "street_name": cell("الشارع"),
-                    "location_details": cell("ملاحظات"),
+                    "notes": cell("ملاحظات"),
                     "vehicle_type": cell("نوع السيارة"),
                     "recorder_name": cell("اسم المسجّل"),
                     "street_location": cell("موقع الشارع"),
@@ -158,8 +158,7 @@ def _parse_check_session_append_sync(source: bytes | str) -> tuple[list[dict], i
             or set(headers_no_empty) != _CHECK_SESSION_EXPORT_HEADERS_SET
         ):
             raise ValueError(
-                "أعمدة الملف غير مطابقة. المطلوب فقط: "
-                + "، ".join(_CHECK_SESSION_EXPORT_HEADERS)
+                "أعمدة الملف غير مطابقة. المطلوب فقط: " + "، ".join(_CHECK_SESSION_EXPORT_HEADERS)
             )
         idx = {h: headers.index(h) for h in _CHECK_SESSION_EXPORT_HEADERS}
         out: list[dict] = []
@@ -193,7 +192,7 @@ def _parse_check_session_append_sync(source: bytes | str) -> tuple[list[dict], i
 
 @router.post("/export-excel")
 async def export_excel(
-    rows_json:  str = Form("[]"),
+    rows_json: str = Form("[]"),
     sheet_name: str = Form("بيانات المركبات"),
 ):
     sheet_name = _clean_sheet_name(sheet_name.strip())
@@ -208,21 +207,23 @@ async def export_excel(
     ws.title = sheet_name
     ws.sheet_view.rightToLeft = True
 
-    hf    = Font(name="Arial", bold=True, color="FFFFFF", size=12)
+    hf = Font(name="Arial", bold=True, color="FFFFFF", size=12)
     hfill = PatternFill("solid", start_color="1F4E79")
-    ha    = Alignment(horizontal="center", vertical="center")
-    ca    = Alignment(horizontal="center", vertical="center", wrap_text=True)
-    df    = Font(name="Arial", size=11)
-    pf    = Font(name="Arial", size=11, bold=True)  # plate font
-    thin  = Side(style="thin", color="BFBFBF")
-    brd   = Border(left=thin, right=thin, top=thin, bottom=thin)
-    fe    = PatternFill("solid", start_color="D6E4F0")
-    fo    = PatternFill("solid", start_color="FFFFFF")
+    ha = Alignment(horizontal="center", vertical="center")
+    ca = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    df = Font(name="Arial", size=11)
+    pf = Font(name="Arial", size=11, bold=True)  # plate font
+    thin = Side(style="thin", color="BFBFBF")
+    brd = Border(left=thin, right=thin, top=thin, bottom=thin)
+    fe = PatternFill("solid", start_color="D6E4F0")
+    fo = PatternFill("solid", start_color="FFFFFF")
 
     for col, h in enumerate(_EXPORT_HEADERS, 1):
         cell = ws.cell(row=1, column=col, value=h)
-        cell.font = hf; cell.fill = hfill
-        cell.alignment = ha; cell.border = brd
+        cell.font = hf
+        cell.fill = hfill
+        cell.alignment = ha
+        cell.border = brd
     ws.row_dimensions[1].height = 30
 
     # Filter invalid plates
@@ -243,7 +244,7 @@ async def export_excel(
             r.get("recording_date", ""),
             r.get("district_name", ""),
             r.get("street_name", "غير محدد"),
-            r.get("location_details", ""),
+            r.get("notes", ""),
             r.get("vehicle_type", "ملاكى"),
             r.get("recorder_name", ""),
             _row_street_location(r),
@@ -252,7 +253,8 @@ async def export_excel(
             cell = ws.cell(row=i + 1, column=col, value=v)
             cell.font = pf if col == 1 else df
             cell.alignment = ca
-            cell.border = brd; cell.fill = fill
+            cell.border = brd
+            cell.fill = fill
 
     for col, w in zip("ABCDEFGHI", _COL_WIDTHS):
         ws.column_dimensions[col].width = w
@@ -262,9 +264,7 @@ async def export_excel(
 
     return StreamingResponse(
         io.BytesIO(content),
-        media_type=(
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        ),
+        media_type=("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
         headers={"Content-Disposition": _content_disposition(filename, "tafreegh.xlsx")},
     )
 
@@ -340,16 +340,14 @@ async def export_check_session(
 
     return StreamingResponse(
         io.BytesIO(content),
-        media_type=(
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        ),
+        media_type=("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
         headers={"Content-Disposition": _content_disposition(filename, "check_session.xlsx")},
     )
 
 
 @router.post("/export-field-check")
 async def export_field_check(
-    rows_json:  str = Form("[]"),
+    rows_json: str = Form("[]"),
     sheet_name: str = Form("التشيك الميداني"),
 ):
     """Same as export-excel but with a different default sheet name."""
@@ -365,16 +363,16 @@ async def export_field_check(
     ws.title = sheet_name
     ws.sheet_view.rightToLeft = True
 
-    hf    = Font(name="Arial", bold=True, color="FFFFFF", size=12)
-    hfill = PatternFill("solid", start_color="0D6B5E")   # teal for field-check
-    ha    = Alignment(horizontal="center", vertical="center")
-    ca    = Alignment(horizontal="center", vertical="center", wrap_text=True)
-    df    = Font(name="Arial", size=11)
-    pf    = Font(name="Arial", size=11, bold=True)  # plate font
-    thin  = Side(style="thin", color="BFBFBF")
-    brd   = Border(left=thin, right=thin, top=thin, bottom=thin)
-    fe    = PatternFill("solid", start_color="E0F2F1")
-    fo    = PatternFill("solid", start_color="FFFFFF")
+    hf = Font(name="Arial", bold=True, color="FFFFFF", size=12)
+    hfill = PatternFill("solid", start_color="0D6B5E")  # teal for field-check
+    ha = Alignment(horizontal="center", vertical="center")
+    ca = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    df = Font(name="Arial", size=11)
+    pf = Font(name="Arial", size=11, bold=True)  # plate font
+    thin = Side(style="thin", color="BFBFBF")
+    brd = Border(left=thin, right=thin, top=thin, bottom=thin)
+    fe = PatternFill("solid", start_color="E0F2F1")
+    fo = PatternFill("solid", start_color="FFFFFF")
 
     headers = [
         "رقم اللوحة",
@@ -391,8 +389,10 @@ async def export_field_check(
 
     for col, h in enumerate(headers, 1):
         cell = ws.cell(row=1, column=col, value=h)
-        cell.font = hf; cell.fill = hfill
-        cell.alignment = ha; cell.border = brd
+        cell.font = hf
+        cell.fill = hfill
+        cell.alignment = ha
+        cell.border = brd
     ws.row_dimensions[1].height = 30
 
     valid_rows = []
@@ -412,7 +412,7 @@ async def export_field_check(
             r.get("recording_date", ""),
             r.get("district_name", ""),
             r.get("street_name", "غير محدد"),
-            r.get("location_details", ""),
+            r.get("notes", ""),
             r.get("vehicle_type", "ملاكى"),
             r.get("recorder_name", ""),
             _row_street_location(r),
@@ -421,7 +421,8 @@ async def export_field_check(
             cell = ws.cell(row=i + 1, column=col, value=v)
             cell.font = pf if col == 1 else df
             cell.alignment = ca
-            cell.border = brd; cell.fill = fill
+            cell.border = brd
+            cell.fill = fill
 
     for col, w in zip("ABCDEFGHI", col_widths):
         ws.column_dimensions[col].width = w
@@ -431,9 +432,7 @@ async def export_field_check(
 
     return StreamingResponse(
         io.BytesIO(content),
-        media_type=(
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        ),
+        media_type=("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
         headers={"Content-Disposition": _content_disposition(filename, "matched_plates.xlsx")},
     )
 
@@ -506,22 +505,19 @@ def _parse_excel_sync(source: bytes | str) -> tuple[list[dict], int]:
             return cell_at(fallback)
 
         # Fallbacks: new export = plate,gps,date,district,street,... ; legacy (no الحي) matches headers first.
-        rows_out.append({
-            "full_plate":       col("اللوحة", 0),
-            "gps":              col("GPS", 1),
-            "recording_date":   col("التسجيل", 2),
-            "district_name":    col_district(),
-            "street_name":      col("الشارع", 4),
-            "location_details": col_by_substrings(
-                ("ملاحظات", "تفاصيل الموقع", "الموقع"), 5
-            ),
-            "vehicle_type":     col_by_substrings(
-                ("نوع السيارة", "نوع المركبة", "المركبة"), 6
-            ),
-            "recorder_name":    col("المسجّل", 7),
-            "street_location":  col_street_location(8),
-            "notes":            col("ملاحظات", -1),
-        })
+        rows_out.append(
+            {
+                "full_plate": col("اللوحة", 0),
+                "gps": col("GPS", 1),
+                "recording_date": col("التسجيل", 2),
+                "district_name": col_district(),
+                "street_name": col("الشارع", 4),
+                "notes": col_by_substrings(("ملاحظات", "تفاصيل الموقع", "الموقع"), 5),
+                "vehicle_type": col_by_substrings(("نوع السيارة", "نوع المركبة", "المركبة"), 6),
+                "recorder_name": col("المسجّل", 7),
+                "street_location": col_street_location(8),
+            }
+        )
 
     return rows_out, len(rows_out)
 

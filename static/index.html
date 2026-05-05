@@ -2654,7 +2654,6 @@ function checkLiveSyncSessionFromItems(items){
     const nk=normPlate(plate);
     if(!nk) continue;
     if(it.moving){
-      checkLiveRemoveSessionRowsByNorm(nk);
       continue;
     }
     if(it.found===false){
@@ -2721,12 +2720,14 @@ function checkLiveOnMessage(ev){
     checkLiveAppendResultRow(d);
     if(!d.moving && (d.found===true||d.found===false)){
       const p=String(d.plate||'').trim();
-      if(p) checkLiveSyncSessionFromItems([{plate:p,found:d.found===true,moving:false}]);
+      if(p) checkLiveMaybeAppendSessionRow({plate:p,found:d.found===true,moving:false});
     }
     return;
   }
   if(t==='check_session_sync'){
-    checkLiveSyncSessionFromItems((j.data&&j.data.items)||[]);
+    // Keep session-sheet writes single-sourced from plate_result to avoid
+    // race/duplication-vs-merge behavior between two concurrent event streams.
+    // (check_session_sync is still available for optional UI-only consumers.)
     return;
   }
   if(t==='error'){

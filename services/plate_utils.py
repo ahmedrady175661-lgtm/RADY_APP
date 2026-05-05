@@ -22,7 +22,6 @@ _SAUDI_LATIN_TO_ARABIC = {
     "J": "ح",
     "D": "د",
     "R": "ر",
-    "Z": "ز",
     "S": "س",
     "X": "ص",
     "T": "ط",
@@ -52,8 +51,15 @@ def _digits_western_from_chars(s: str) -> str:
 
 def _normalize_plate_letters_segment(letters: str) -> str:
     letters = re.sub(r"[^A-Za-z\u0600-\u06FF]+", "", str(letters or ""))
+    has_latin = bool(re.search(r"[A-Za-z]", letters))
+    has_arabic = bool(re.search(r"[\u0600-\u06FF]", letters))
     # Map Saudi plate Latin letters to Arabic before normalization.
     letters = "".join(_SAUDI_LATIN_TO_ARABIC.get(ch.upper(), ch) for ch in letters)
+    # Saudi plate Latin triplets are commonly read left-to-right (e.g. TNJ),
+    # while Arabic letters are displayed right-to-left (حنط). Reverse only
+    # when the source segment was Latin-only to avoid breaking Arabic input.
+    if has_latin and not has_arabic:
+        letters = letters[::-1]
     letters = _AR_HARAKAT_TATWEEL.sub("", letters)
     letters = re.sub(r"[أإآٱ]", "ا", letters)
     letters = letters.replace("\u0649", "\u064a")

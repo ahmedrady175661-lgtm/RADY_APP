@@ -502,7 +502,7 @@ async def _emit_plate_result(
 
 
 async def _emit_model_plate_if_new(websocket: WebSocket, session: SessionState, plate: Any) -> bool:
-    """Emit model plate result (no per-turn dedupe suppression)."""
+    """Emit model plate result once per normalized plate within a turn."""
     moving = _entry_moving(plate) if isinstance(plate, dict) else False
     pv = _plate_value_from_entry(plate)
     normalized_plate = _sanitize_live_plate_text(pv)
@@ -510,6 +510,8 @@ async def _emit_model_plate_if_new(websocket: WebSocket, session: SessionState, 
         return False
     key = normalize_plate(normalized_plate)
     if key:
+        if key in session.model_plate_norm_keys:
+            return False
         session.model_plate_norm_keys.add(key)
     await _emit_plate_result(websocket, session, normalized_plate, moving=moving)
     return True

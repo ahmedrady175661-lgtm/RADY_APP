@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from db import Base
@@ -30,5 +30,12 @@ class User(Base):
         Integer, ForeignKey("user_groups.id", ondelete="SET NULL"), nullable=True
     )
     max_stored_large_rows: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # Per-user Gemini model assignment (admin-managed). NULL => use app default catalog.
+    gemini_rest_model_id: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    gemini_live_model_id: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    # Per-user Gemini spend guard (USD) in the current subscription cycle.
+    # Admins are exempt from budget enforcement.
+    gemini_spend_limit_usd: Mapped[float | None] = mapped_column(Numeric(14, 6), nullable=True)
+    gemini_spend_limit_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     group = relationship("UserGroup", back_populates="users")

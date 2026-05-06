@@ -19,6 +19,10 @@ from services.auth_service import (
     refresh as auth_refresh,
 )
 from services.gemini_usage import sum_gemini_cost_usd_for_user_cycle_channel
+from services.check_postgres import (
+    count_rows_for_user_ids_sync,
+    count_storage_bytes_for_user_ids_sync,
+)
 from services.rate_limit import limiter
 from services.subscription import (
     cycle_end_utc,
@@ -43,6 +47,8 @@ async def me(
     grace = False
     r_cost = 0.0
     l_cost = 0.0
+    used_rows = 0
+    used_bytes = 0
     if not u.is_admin and u.subscription_cycle_started_at is not None:
         started = u.subscription_cycle_started_at
         started_at = started
@@ -51,6 +57,18 @@ async def me(
         grace = bool(in_grace_period(started))
         r_cost = sum_gemini_cost_usd_for_user_cycle_channel(db, u, started, "rest")
         l_cost = sum_gemini_cost_usd_for_user_cycle_channel(db, u, started, "live")
+    dsn = (settings.check_postgres_dsn or "").strip()
+    if dsn:
+        try:
+            used_rows = count_rows_for_user_ids_sync(
+                dsn, int(u.id), bool(u.is_admin), [int(u.id)]
+            )
+            used_bytes = count_storage_bytes_for_user_ids_sync(
+                dsn, int(u.id), bool(u.is_admin), [int(u.id)]
+            )
+        except Exception:
+            used_rows = 0
+            used_bytes = 0
     return MeOut(
         username=u.username,
         is_admin=u.is_admin,
@@ -63,6 +81,8 @@ async def me(
         gemini_rest_cost_usd=float(r_cost),
         gemini_live_cost_usd=float(l_cost),
         gemini_total_cost_usd=float(r_cost + l_cost),
+        used_stored_large_rows=int(used_rows),
+        used_stored_large_bytes=int(used_bytes),
     )
 
 

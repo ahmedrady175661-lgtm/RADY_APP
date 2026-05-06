@@ -23,6 +23,11 @@ class UserOut(BaseModel):
     group_name: str | None = None
     max_stored_large_rows: int | None = None
     used_stored_large_rows: int = 0
+    used_stored_large_bytes: int = 0
+    gemini_rest_model_id: str | None = None
+    gemini_live_model_id: str | None = None
+    gemini_spend_limit_enabled: bool = False
+    gemini_spend_limit_usd: float | None = None
 
     class Config:
         from_attributes = True
@@ -41,6 +46,7 @@ class AdminUserDetailOut(BaseModel):
     group_name: str | None = None
     max_stored_large_rows: int | None = None
     used_stored_large_rows: int = 0
+    used_stored_large_bytes: int = 0
     subscription_cycle_started_at: datetime | None = None
     subscription_cycle_ends_at: datetime | None = None
     cycle_days_remaining: int = 0
@@ -62,6 +68,11 @@ class AdminUserDetailOut(BaseModel):
     gemini_live_tokens: int = 0
     gemini_live_events: int = 0
     gemini_live_models: str = ""
+    gemini_rest_model_id: str | None = None
+    gemini_live_model_id: str | None = None
+    gemini_spend_limit_enabled: bool = False
+    gemini_spend_limit_usd: float | None = None
+    gemini_spend_remaining_usd: float | None = None
 
     class Config:
         from_attributes = True
@@ -120,3 +131,10 @@ class UserLargeRowsLimitUpdate(BaseModel):
 
 class GroupLargeRowsLimitUpdate(BaseModel):
     max_stored_large_rows: int = Field(ge=1, le=200_000_000)
+
+
+class UserGeminiPolicyUpdate(BaseModel):
+    gemini_rest_model_id: str | None = Field(default=None, max_length=200)
+    gemini_live_model_id: str | None = Field(default=None, max_length=200)
+    gemini_spend_limit_enabled: bool = False
+    gemini_spend_limit_usd: float | None = Field(default=None, ge=0)

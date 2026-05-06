@@ -1,5 +1,5 @@
 from .gemini_usage import GeminiModelPricing, GeminiUsageEvent
-from .provider_config import GeminiModelCatalog
+from .provider_config import GeminiModelCatalog, GeminiServerDefaultModel
 from .refresh_token import RefreshToken
 from .user import User
 from .user_group import UserGroup
@@ -9,6 +9,7 @@ __all__ = [
     "UserGroup",
     "RefreshToken",
     "GeminiModelCatalog",
+    "GeminiServerDefaultModel",
     "GeminiModelPricing",
     "GeminiUsageEvent",
 ]

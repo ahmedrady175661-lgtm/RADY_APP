@@ -23,3 +23,17 @@ class GeminiModelCatalog(Base):
     enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     sort_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class GeminiServerDefaultModel(Base):
+    """Server-wide default model per channel (applies when user has no override)."""
+
+    __tablename__ = "gemini_server_default_models"
+    __table_args__ = (UniqueConstraint("channel", name="uq_gemini_server_default_channel"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    channel: Mapped[str] = mapped_column(String(8), index=True, nullable=False)  # rest | live
+    model_id: Mapped[str] = mapped_column(String(200), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
+    )

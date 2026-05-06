@@ -529,6 +529,59 @@ def count_rows_for_user_ids_sync(
             return int(row[0] if row else 0)
 
 
+def count_storage_bytes_for_user_ids_sync(
+    dsn: str, user_id: int, is_admin: bool, target_user_ids: list[int]
+) -> int:
+    """
+    Approximate logical storage bytes for selected users from check_large_rows payload.
+    Uses pg_column_size(row) sum; excludes index bloat and unrelated tables.
+    """
+    ensure_check_pg_schema(dsn)
+    ids = [int(x) for x in (target_user_ids or []) if int(x) > 0]
+    if not ids:
+        return 0
+    with check_pg_tx(dsn, user_id, is_admin) as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT COALESCE(SUM(pg_column_size(r)), 0)::bigint
+                FROM check_large_rows r
+                WHERE r.user_id = ANY(%s)
+                """,
+                (ids,),
+            )
+            row = cur.fetchone()
+            return int(row[0] if row else 0)
+
+
+def count_storage_bytes_server_sync(dsn: str, user_id: int, is_admin: bool) -> int:
+    """
+    Total logical bytes stored in check_large_rows for all users.
+    Requires admin-context connection to bypass RLS restrictions.
+    """
+    ensure_check_pg_schema(dsn)
+    with check_pg_tx(dsn, user_id, is_admin) as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT COALESCE(SUM(pg_column_size(r)), 0)::bigint
+                FROM check_large_rows r
+                """
+            )
+            row = cur.fetchone()
+            return int(row[0] if row else 0)
+
+
+def count_rows_server_sync(dsn: str, user_id: int, is_admin: bool) -> int:
+    """Total rows in check_large_rows across the server (admin context)."""
+    ensure_check_pg_schema(dsn)
+    with check_pg_tx(dsn, user_id, is_admin) as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT COUNT(*)::bigint FROM check_large_rows")
+            row = cur.fetchone()
+            return int(row[0] if row else 0)
+
+
 def list_imports_sync(
     dsn: str,
     user_id: int,

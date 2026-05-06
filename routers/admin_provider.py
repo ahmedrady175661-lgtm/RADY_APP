@@ -11,7 +11,11 @@ from db import get_db
 from dependencies.auth import require_admin
 from models import User
 from models.provider_config import GeminiModelCatalog
-from services.gemini_catalog import list_gemini_models_sync
+from services.gemini_catalog import (
+    get_server_default_model_sync,
+    list_gemini_models_sync,
+    set_server_default_model_sync,
+)
 from services.provider_keys import (
     admin_add_key,
     admin_delete_key,
@@ -32,6 +36,11 @@ class GeminiModelCreate(BaseModel):
 
 class KeyAddPayload(BaseModel):
     value: str = Field(..., min_length=1, max_length=8000)
+
+
+class GeminiServerDefaultsUpdate(BaseModel):
+    rest_model_id: str = Field(..., min_length=2, max_length=200)
+    live_model_id: str = Field(..., min_length=2, max_length=200)
 
 
 @router.get("/gemini-models")
@@ -81,6 +90,35 @@ async def admin_delete_model(
     db.delete(row)
     db.commit()
     return {"deleted": True, "id": model_row_id}
+
+
+@router.get("/gemini-defaults")
+async def admin_get_gemini_defaults(
+    _admin: User = Depends(require_admin),
+):
+    return {
+        "rest_model_id": get_server_default_model_sync("rest"),
+        "live_model_id": get_server_default_model_sync("live"),
+    }
+
+
+@router.put("/gemini-defaults")
+async def admin_put_gemini_defaults(
+    payload: GeminiServerDefaultsUpdate,
+    _admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    try:
+        r = set_server_default_model_sync(db, channel="rest", model_id=payload.rest_model_id)
+        l = set_server_default_model_sync(db, channel="live", model_id=payload.live_model_id)
+    except ValueError as e:
+        msg = str(e)
+        if msg == "model_not_allowed":
+            raise HTTPException(status_code=400, detail="الموديل غير مفعّل في الكتالوج.") from e
+        if msg == "model_required":
+            raise HTTPException(status_code=400, detail="اختر موديل REST و Live.") from e
+        raise HTTPException(status_code=400, detail="بيانات غير صالحة.") from e
+    return {"ok": True, "rest": r, "live": l}
 
 
 @router.get("/key-pools")

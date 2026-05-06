@@ -865,6 +865,9 @@ body.light .om-xls-grid td.om-plate-dup{background:rgba(253,224,71,.55)!importan
         <select id="userLiveModel" style="width:100%;padding:.55rem;border-radius:8px;border:1px solid var(--brd2);font-family:var(--mono);font-size:.78rem" onchange="onUserGeminiModelChange()"></select>
       </div>
     </div>
+    <div style="margin-top:.55rem;display:flex;gap:.45rem;flex-wrap:wrap">
+      <button type="button" class="tb-btn primary" onclick="adminSaveGeminiModelsNow()">💾 حفظ موديل السيرفر الأساسي</button>
+    </div>
     <p style="font-size:.7rem;color:var(--dim2);margin-top:.55rem">موديلات Gemini تُضاف من القسم أدناه. <strong>مفاتيح API</strong> (مفتاح واحد لكل نوع للسيرفر): تُعرَض وتُحدَّث من <strong>لوحة الأدمن</strong> وتُخزَّن في <strong>ذاكرة السيرفر فقط</strong> (بدون قرص ولا قاعدة بيانات — تُفقد بعد إعادة التشغيل).</p>
   </div>
   <div class="panel violet-accent">
@@ -892,6 +895,7 @@ body.light .om-xls-grid td.om-plate-dup{background:rgba(253,224,71,.55)!importan
       <button class="tb-btn outline" onclick="adminRefreshUserAdminPanel()">تحديث القائمة</button>
       <a class="tb-btn outline" href="/admin/check-storage" target="_blank" rel="noopener" style="text-decoration:none;display:inline-flex;align-items:center">&#x1F5C4; فرز Postgres</a>
     </div>
+    <div id="adminStorageSummary" style="margin-top:.55rem;font-size:.74rem;color:var(--dim2);font-family:var(--mono)"></div>
     <div id="adminMsg" style="margin-top:.6rem;font-family:var(--mono);font-size:.75rem;color:var(--dim2)"></div>
   </div>
   <div class="panel">
@@ -973,7 +977,9 @@ body.light .om-xls-grid td.om-plate-dup{background:rgba(253,224,71,.55)!importan
       <div><label class="lbl">تسمية</label><input id="admGmLabel" type="text" style="width:100%;padding:.4rem;border-radius:8px;border:1px solid var(--brd2)"/></div>
       <div><label class="lbl">ترتيب</label><input id="admGmSort" type="number" value="0" style="width:100%;padding:.4rem;border-radius:8px;border:1px solid var(--brd2)"/></div>
     </div>
-    <button type="button" class="tb-btn primary" onclick="adminAddGeminiModel()">&#x2795; إضافة موديل</button>
+    <div style="display:flex;gap:.45rem;flex-wrap:wrap">
+      <button type="button" class="tb-btn primary" onclick="adminAddGeminiModel()">&#x2795; إضافة موديل</button>
+    </div>
     <div class="tbl-outer" style="max-height:200px;overflow:auto;margin-top:.65rem">
       <table style="font-size:.76rem">
         <thead><tr><th>ID</th><th>channel</th><th>model_id</th><th>label</th><th></th></tr></thead>
@@ -1070,6 +1076,8 @@ const USER_REST_MODEL_KEY='userGeminiRestModel_v1';
 const USER_LIVE_MODEL_KEY='userGeminiLiveModel_v1';
 let _geminiModelsCacheRest=[];
 let _geminiModelsCacheLive=[];
+window._adminGeminiModelsCacheRest=[];
+window._adminGeminiModelsCacheLive=[];
 function getUserRestModel(){
   const el=document.getElementById('userRestModel');
   if(el&&el.value) return String(el.value).trim();
@@ -1139,6 +1147,17 @@ async function refreshUserGeminiModels(){
         else if(sl.options[0]) sl.value=sl.options[0].value;
       }
     }
+    // Admin page: reflect persisted server defaults in top selectors.
+    if(localStorage.getItem('auth_is_admin')==='1'){
+      try{
+        const dr=await fetch('/admin/provider/gemini-defaults');
+        const dj=await dr.json().catch(()=>({}));
+        if(dr.ok){
+          if(sr && dj.rest_model_id && [...sr.options].some(o=>o.value===dj.rest_model_id)) sr.value=dj.rest_model_id;
+          if(sl && dj.live_model_id && [...sl.options].some(o=>o.value===dj.live_model_id)) sl.value=dj.live_model_id;
+        }
+      }catch(_){}
+    }
   }catch(e){}
 }
 // ── Audio blob extension (تسجيل مباشر = WebM/Opus بدون تحويل) ──
@@ -1204,6 +1223,10 @@ async function openSettings(){
     rows+='<tr><th style="'+thSt+'">حساب التسجيل (REST)</th><td style="'+tdSt+'">~$'+rest.toFixed(4)+'</td></tr>';
     rows+='<tr><th style="'+thSt+'">حساب التشيك (Live)</th><td style="'+tdSt+'">~$'+live.toFixed(4)+'</td></tr>';
     rows+='<tr><th style="'+thSt+'">الحساب الكلي</th><td style="'+tdSt+'"><strong>~$'+total.toFixed(4)+'</strong></td></tr>';
+    const usedRows=Number(j.used_stored_large_rows||0);
+    const usedMB=(Number(j.used_stored_large_bytes||0)/(1024*1024));
+    rows+='<tr><th style="'+thSt+'">صفوف Postgres المستخدمة</th><td style="'+tdSt+'">'+String(usedRows)+'</td></tr>';
+    rows+='<tr><th style="'+thSt+'">مساحة Postgres المستخدمة</th><td style="'+tdSt+'"><strong>'+usedMB.toFixed(2)+' MB</strong></td></tr>';
     let html='<table dir="rtl" style="'+tblSt+'">'+rows+'</table>';
     if(daysNum===0){
       html+='<p style="margin:.55rem 0 0;font-size:.72rem;color:var(--red)">انتهت مدة الدورة — تواصل مع المسؤول لتجديد الاشتراك.</p>';
@@ -3462,7 +3485,22 @@ function applyAdminNavVisibility(){
     const detail=document.getElementById('admUserDetail');
     const inner=document.getElementById('admUserDetailInner');
     const m=document.getElementById('adminMsg');
+    const sb=document.getElementById('adminStorageSummary');
     try{
+      try{
+        const sr=await fetch('/admin/storage-summary');
+        const sj=await sr.json().catch(()=>({}));
+        if(sb){
+          if(sr.ok){
+            sb.textContent='Postgres (Server): '+Number(sj.server_used_mb||0).toFixed(2)+' MB | Rows: '+String(sj.server_rows||0);
+          }else{
+            sb.textContent='Postgres (Server): غير متاح حالياً';
+          }
+        }
+      }catch(_e){}
+      if(typeof window.adminLoadGeminiModelsAdmin==='function'){
+        await window.adminLoadGeminiModelsAdmin();
+      }
       await window.adminLoadGroups();
       const prev=pick&&pick.value?String(pick.value):'';
       const r=await fetch('/admin/users');
@@ -3529,6 +3567,21 @@ function applyAdminNavVisibility(){
       var sel=(d.group_id!=null&&Number(d.group_id)===Number(g.id))?' selected':'';
       grpOpts+='<option value="'+g.id+'"'+sel+'>'+escFn(String(g.name))+'</option>';
     });
+    var restOpts='<option value="">الافتراضي (من الكتالوج)</option>';
+    (window._adminGeminiModelsCacheRest||[]).forEach(function(m){
+      var mid=String((m&&m.model_id)||'').trim();
+      if(!mid) return;
+      var sel=(String(d.gemini_rest_model_id||'')===mid)?' selected':'';
+      restOpts+='<option value="'+escFn(mid)+'"'+sel+'>'+escFn(String((m&&m.label)||mid))+'</option>';
+    });
+    var liveOpts='<option value="">الافتراضي (من الكتالوج)</option>';
+    (window._adminGeminiModelsCacheLive||[]).forEach(function(m){
+      var mid=String((m&&m.model_id)||'').trim();
+      if(!mid) return;
+      var sel=(String(d.gemini_live_model_id||'')===mid)?' selected':'';
+      liveOpts+='<option value="'+escFn(mid)+'"'+sel+'>'+escFn(String((m&&m.label)||mid))+'</option>';
+    });
+    var limEnabledSel=String(d.gemini_spend_limit_enabled?'1':'0');
     var th='style="text-align:right;white-space:nowrap;padding:.4rem .45rem;border:1px solid var(--brd2);background:var(--s2);color:var(--dim2);font-weight:700;font-size:.7rem;width:1%"';
     var td='style="padding:.4rem .5rem;border:1px solid var(--brd2);font-size:.72rem;vertical-align:middle"';
     var tdMono='style="padding:.4rem .5rem;border:1px solid var(--brd2);font-size:.68rem;vertical-align:middle;font-family:var(--mono);word-break:break-all"';
@@ -3554,6 +3607,11 @@ function applyAdminNavVisibility(){
       var liveU='~$'+Number(d.gemini_live_cost_usd||0).toFixed(4)+' · توكنات '+String(d.gemini_live_tokens||0)+' · '+String(d.gemini_live_events||0)+' حدث';
       subRows+=row4('REST (تفريغ) — الموديل',escFn(String(d.gemini_rest_models||'—')),'REST — الاستخدام',restU);
       subRows+=row4('Live (تشيك) — الموديل',escFn(String(d.gemini_live_models||'—')),'Live — الاستخدام',liveU);
+      var limTxt=(d.gemini_spend_limit_enabled?(d.gemini_spend_limit_usd==null?'—':'$'+Number(d.gemini_spend_limit_usd||0).toFixed(4)):'غير مفعّل');
+      var remTxt=(d.gemini_spend_remaining_usd==null?'—':'$'+Number(d.gemini_spend_remaining_usd||0).toFixed(4));
+      subRows+=row4('حد Gemini بالدولار',limTxt,'المتبقي',remTxt);
+      subRows+=row4('موديل REST (مخصص)',escFn(String(d.gemini_rest_model_id||'الافتراضي')),'موديل Live (مخصص)',escFn(String(d.gemini_live_model_id||'الافتراضي')));
+      subRows+=row4('مساحة المستخدم (Postgres)',(Number(d.used_stored_large_bytes||0)/(1024*1024)).toFixed(2)+' MB','صفوف المستخدم',String(d.used_stored_large_rows||0));
     }
     var dev=d.device_id?escFn(String(d.device_id)):'—';
     var tbl='<table dir="rtl" style="width:100%;max-width:820px;border-collapse:collapse;table-layout:fixed;margin:0 0 .65rem">'+
@@ -3567,6 +3625,9 @@ function applyAdminNavVisibility(){
       '<tr><th scope="row" '+th+'>مجموعة الفرز</th><td colspan="3" '+td+'>'+
         '<select id="admDetailGroupSel" style="font-size:.72rem;padding:.28rem .4rem;max-width:min(100%,280px);border-radius:6px;border:1px solid var(--brd2)"><option value="">— فردي —</option>'+grpOpts+'</select> '+
         '<button type="button" class="tb-btn outline" style="font-size:.68rem;padding:.25rem .5rem;margin-inline-start:.35rem" onclick="adminAssignUserGroup('+d.id+',document.getElementById(\'admDetailGroupSel\'))">حفظ المجموعة</button></td></tr>'+
+      '<tr><th scope="row" '+th+'>موديل REST للمستخدم</th><td '+td+'><select id="admDetailRestModelSel" style="width:100%;padding:.32rem .4rem;border-radius:6px;border:1px solid var(--brd2);font-size:.72rem">'+restOpts+'</select></td><th scope="row" '+th+'>موديل Live للمستخدم</th><td '+td+'><select id="admDetailLiveModelSel" style="width:100%;padding:.32rem .4rem;border-radius:6px;border:1px solid var(--brd2);font-size:.72rem">'+liveOpts+'</select></td></tr>'+
+      '<tr><th scope="row" '+th+'>حد Gemini مفعل</th><td '+td+'><select id="admDetailGeminiLimitEnabled" style="width:100%;padding:.32rem .4rem;border-radius:6px;border:1px solid var(--brd2);font-size:.72rem"><option value="0"'+(limEnabledSel==='0'?' selected':'')+'>لا</option><option value="1"'+(limEnabledSel==='1'?' selected':'')+'>نعم</option></select></td><th scope="row" '+th+'>قيمة الحد بالدولار</th><td '+td+'><input id="admDetailGeminiLimitUsd" type="number" min="0" step="0.0001" value="'+escFn(String(d.gemini_spend_limit_usd==null?'':d.gemini_spend_limit_usd))+'" style="width:100%;padding:.32rem .4rem;border-radius:6px;border:1px solid var(--brd2);font-size:.72rem"/></td></tr>'+
+      '<tr><th scope="row" '+th+'>حفظ سياسة Gemini</th><td colspan="3" '+td+'><button type="button" class="tb-btn primary" style="font-size:.7rem" onclick="adminUpdateUserGeminiPolicy('+d.id+')">حفظ سياسة Gemini</button></td></tr>'+
       row4('صفوف الفرز المستخدمة',String(d.used_stored_large_rows||0),'حد المستخدم',d.max_stored_large_rows==null?'—':String(d.max_stored_large_rows))+
       '</tbody></table>';
     var btns='<div style="display:flex;flex-wrap:wrap;gap:.45rem;margin-top:.15rem">'+
@@ -3594,6 +3655,35 @@ function applyAdminNavVisibility(){
   };
   window.adminLoadUsers=window.adminRefreshUserAdminPanel;
 
+  window.adminUpdateUserGeminiPolicy=async function(userId){
+    const m=document.getElementById('adminMsg');
+    const restSel=document.getElementById('admDetailRestModelSel');
+    const liveSel=document.getElementById('admDetailLiveModelSel');
+    const enSel=document.getElementById('admDetailGeminiLimitEnabled');
+    const limInp=document.getElementById('admDetailGeminiLimitUsd');
+    if(!restSel||!liveSel||!enSel||!limInp){ if(m){ m.style.color='var(--red)'; m.textContent='افتح تفاصيل المستخدم أولاً'; } return; }
+    const enabled=String(enSel.value||'')==='1';
+    let lim=null;
+    if(enabled){
+      lim=Number(String(limInp.value||'').trim());
+      if(!(lim>=0)){ if(m){ m.style.color='var(--red)'; m.textContent='قيمة الحد غير صحيحة'; } return; }
+    }
+    const body={
+      gemini_rest_model_id:String(restSel.value||'').trim()||null,
+      gemini_live_model_id:String(liveSel.value||'').trim()||null,
+      gemini_spend_limit_enabled:enabled,
+      gemini_spend_limit_usd:enabled?lim:null,
+    };
+    try{
+      const r=await fetch('/admin/users/'+userId+'/gemini-policy',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+      const j=await r.json().catch(()=>({}));
+      if(!r.ok) throw new Error(j.detail||'فشل تحديث سياسة Gemini');
+      if(m){ m.style.color='var(--green)'; m.textContent='تم تحديث سياسة Gemini'; }
+      await window.adminLoadUsers();
+      await window.adminLoadGeminiModelsAdmin();
+    }catch(e){ if(m){ m.style.color='var(--red)'; m.textContent=e.message||'فشل'; } }
+  };
+
   window.adminUpdateUserRowsLimit=async function(userId,current){
     const m=document.getElementById('adminMsg');
     const raw=prompt('حد الصفوف الجديد للمستخدم:',String(current||''));
@@ -3611,13 +3701,16 @@ function applyAdminNavVisibility(){
 
   window.adminLoadGeminiModelsAdmin=async function(){
     const body=document.getElementById('adminGmModelsBody');
-    if(!body) return;
     try{
       const r=await fetch('/admin/provider/gemini-models');
       const j=await r.json().catch(()=>[]);
       if(!r.ok) throw new Error((j&&j.detail)||'فشل');
+      const rows=Array.isArray(j)?j:[];
+      window._adminGeminiModelsCacheRest=rows.filter(function(x){ return x&&x.channel==='rest'; });
+      window._adminGeminiModelsCacheLive=rows.filter(function(x){ return x&&x.channel==='live'; });
+      if(!body) return;
       body.innerHTML='';
-      (j||[]).forEach(function(m){
+      rows.forEach(function(m){
         const tr=document.createElement('tr');
         tr.innerHTML='<td>'+m.id+'</td><td>'+String(m.channel)+'</td><td style="font-family:var(--mono);font-size:.68rem">'+String(m.model_id)+'</td><td>'+(m.label||'—')+'</td>'+
           '<td><button type="button" class="tb-btn danger" style="padding:.2rem .4rem;font-size:.65rem" onclick="adminDeleteGeminiModel('+m.id+')">حذف</button></td>';
@@ -3653,6 +3746,42 @@ function applyAdminNavVisibility(){
       await window.adminLoadGeminiModelsAdmin();
       try{ if(typeof refreshUserGeminiModels==='function') await refreshUserGeminiModels(); }catch(_){}
     }catch(e){ if(m){ m.style.color='var(--red)'; m.textContent=e.message||'فشل'; } }
+  };
+  window.adminSaveGeminiModelsNow=async function(){
+    const m=document.getElementById('adminMsg');
+    try{
+      const restSel=document.getElementById('userRestModel');
+      const liveSel=document.getElementById('userLiveModel');
+      const rest_model_id=String((restSel&&restSel.value)||'').trim();
+      const live_model_id=String((liveSel&&liveSel.value)||'').trim();
+      if(!rest_model_id||!live_model_id){
+        throw new Error('اختر موديل REST وLive أولاً.');
+      }
+      const wr=await fetch('/admin/provider/gemini-defaults',{
+        method:'PUT',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({rest_model_id:rest_model_id,live_model_id:live_model_id})
+      });
+      const wj=await wr.json().catch(()=>({}));
+      if(!wr.ok) throw new Error((wj&&wj.detail)||'فشل حفظ الموديل الأساسي');
+      // Apply immediately in current browser session (no page reload).
+      try{
+        localStorage.setItem(USER_REST_MODEL_KEY, rest_model_id);
+        localStorage.setItem(USER_LIVE_MODEL_KEY, live_model_id);
+      }catch(_){}
+      await window.adminLoadGeminiModelsAdmin();
+      if(typeof refreshUserGeminiModels==='function') await refreshUserGeminiModels();
+      await window.adminRefreshUserAdminPanel();
+      // Live model is picked at WS init; restart active Live session so change is immediate.
+      try{
+        if(typeof checkLiveStopAll==='function' && typeof checkLiveWs!=='undefined' && checkLiveWs && checkLiveWs.readyState===1){
+          checkLiveStopAll();
+        }
+      }catch(_){}
+      if(m){ m.style.color='var(--green)'; m.textContent='تم حفظ الموديل الأساسي وتطبيقه فورًا. إن كانت جلسة Live مفتوحة فتم إغلاقها لتبدأ بالموديل الجديد.'; }
+    }catch(e){
+      if(m){ m.style.color='var(--red)'; m.textContent=(e&&e.message)?e.message:'فشل تحديث القوائم'; }
+    }
   };
 
   function _admPoolStatusLabel(row){

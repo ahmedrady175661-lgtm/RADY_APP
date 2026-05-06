@@ -14,7 +14,11 @@ from sqlalchemy.orm import Session
 
 from config import settings
 from db import Base, apply_postgres_auth_migrations, apply_sqlite_migrations, engine
-from models import User, UserGroup  # noqa: F401 — register UserGroup for create_all
+from models import (  # noqa: F401 — register models for create_all
+    GeminiServerDefaultModel,
+    User,
+    UserGroup,
+)
 from models.gemini_usage import GeminiModelPricing, GeminiUsageEvent  # noqa: F401 — create_all
 from routers.admin import router as admin_router
 from routers.admin_check_storage import router as admin_check_storage_router

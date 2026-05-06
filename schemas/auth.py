@@ -44,3 +44,5 @@ class MeOut(BaseModel):
     gemini_rest_cost_usd: float = 0.0
     gemini_live_cost_usd: float = 0.0
     gemini_total_cost_usd: float = 0.0
+    used_stored_large_rows: int = 0
+    used_stored_large_bytes: int = 0

@@ -91,6 +91,36 @@ def apply_sqlite_migrations() -> None:
             except OperationalError as e:
                 if "duplicate column" not in str(getattr(e, "orig", None) or e).lower():
                     raise
+        rows_u3 = conn.execute(text("PRAGMA table_info(users)")).fetchall()
+        ucols3 = {r[1] for r in rows_u3}
+        if "gemini_rest_model_id" not in ucols3:
+            try:
+                conn.execute(text("ALTER TABLE users ADD COLUMN gemini_rest_model_id VARCHAR(200)"))
+            except OperationalError as e:
+                if "duplicate column" not in str(getattr(e, "orig", None) or e).lower():
+                    raise
+        if "gemini_live_model_id" not in ucols3:
+            try:
+                conn.execute(text("ALTER TABLE users ADD COLUMN gemini_live_model_id VARCHAR(200)"))
+            except OperationalError as e:
+                if "duplicate column" not in str(getattr(e, "orig", None) or e).lower():
+                    raise
+        if "gemini_spend_limit_usd" not in ucols3:
+            try:
+                conn.execute(text("ALTER TABLE users ADD COLUMN gemini_spend_limit_usd NUMERIC(14,6)"))
+            except OperationalError as e:
+                if "duplicate column" not in str(getattr(e, "orig", None) or e).lower():
+                    raise
+        if "gemini_spend_limit_enabled" not in ucols3:
+            try:
+                conn.execute(
+                    text(
+                        "ALTER TABLE users ADD COLUMN gemini_spend_limit_enabled BOOLEAN NOT NULL DEFAULT 0"
+                    )
+                )
+            except OperationalError as e:
+                if "duplicate column" not in str(getattr(e, "orig", None) or e).lower():
+                    raise
         try:
             conn.execute(
                 text("ALTER TABLE gemini_usage_events ADD COLUMN billing_cycle_start_at DATETIME")
@@ -264,6 +294,54 @@ def apply_postgres_auth_migrations() -> None:
                       AND g.user_id IS NOT NULL
                       AND g.billing_cycle_start_at IS NULL
                     """
+                )
+            )
+        row = conn.execute(
+            text(
+                """
+                SELECT 1 FROM information_schema.columns
+                WHERE table_schema = 'public' AND table_name = 'users'
+                  AND column_name = 'gemini_rest_model_id'
+                """
+            )
+        ).fetchone()
+        if not row:
+            conn.execute(text("ALTER TABLE users ADD COLUMN gemini_rest_model_id VARCHAR(200)"))
+        row = conn.execute(
+            text(
+                """
+                SELECT 1 FROM information_schema.columns
+                WHERE table_schema = 'public' AND table_name = 'users'
+                  AND column_name = 'gemini_live_model_id'
+                """
+            )
+        ).fetchone()
+        if not row:
+            conn.execute(text("ALTER TABLE users ADD COLUMN gemini_live_model_id VARCHAR(200)"))
+        row = conn.execute(
+            text(
+                """
+                SELECT 1 FROM information_schema.columns
+                WHERE table_schema = 'public' AND table_name = 'users'
+                  AND column_name = 'gemini_spend_limit_usd'
+                """
+            )
+        ).fetchone()
+        if not row:
+            conn.execute(text("ALTER TABLE users ADD COLUMN gemini_spend_limit_usd NUMERIC(14,6)"))
+        row = conn.execute(
+            text(
+                """
+                SELECT 1 FROM information_schema.columns
+                WHERE table_schema = 'public' AND table_name = 'users'
+                  AND column_name = 'gemini_spend_limit_enabled'
+                """
+            )
+        ).fetchone()
+        if not row:
+            conn.execute(
+                text(
+                    "ALTER TABLE users ADD COLUMN gemini_spend_limit_enabled BOOLEAN NOT NULL DEFAULT FALSE"
                 )
             )
 

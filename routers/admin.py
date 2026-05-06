@@ -21,6 +21,7 @@ from schemas.user import (
     GroupOut,
     UserActiveUpdate,
     UserGroupUpdate,
+    UserGeminiPolicyUpdate,
     UserLargeRowsLimitUpdate,
     UserOut,
 )
@@ -41,10 +42,16 @@ from services.check_group_sync import (
     sync_user_group_membership_postgres,
 )
 from services.check_postgres import count_rows_for_user_ids_sync
+from services.check_postgres import (
+    count_rows_server_sync,
+    count_storage_bytes_for_user_ids_sync,
+    count_storage_bytes_server_sync,
+)
 from services.gemini_usage import (
     gemini_carryover_filter,
     gemini_cycle_base_filter,
 )
+from services.gemini_catalog import is_gemini_model_allowed_sync
 from services.subscription import (
     cycle_end_utc,
     in_grace_period,
@@ -81,6 +88,15 @@ def _user_out(db_user: User) -> UserOut:
             else None
         ),
         used_stored_large_rows=0,
+        used_stored_large_bytes=0,
+        gemini_rest_model_id=(db_user.gemini_rest_model_id or None),
+        gemini_live_model_id=(db_user.gemini_live_model_id or None),
+        gemini_spend_limit_enabled=bool(db_user.gemini_spend_limit_enabled),
+        gemini_spend_limit_usd=(
+            float(db_user.gemini_spend_limit_usd)
+            if db_user.gemini_spend_limit_usd is not None
+            else None
+        ),
     )
 
 
@@ -119,6 +135,7 @@ def _gemini_cycle_channel_bundle(
 
 def _admin_user_detail_out(db: Session, admin: User, db_user: User) -> AdminUserDetailOut:
     used_map = _user_used_rows_map(db, admin, [int(db_user.id)])
+    used_bytes_map = _user_used_bytes_map(db, admin, [int(db_user.id)])
     started = db_user.subscription_cycle_started_at
     end_at = cycle_end_utc(started) if started and not db_user.is_admin else None
     days_rem = subscription_days_remaining(started) if started and not db_user.is_admin else 0
@@ -172,6 +189,14 @@ def _admin_user_detail_out(db: Session, admin: User, db_user: User) -> AdminUser
             c_cost = float(rc or 0)
         c_tok = int(crow[1] or 0)
         c_evs = int(crow[2] or 0)
+    lim = (
+        float(db_user.gemini_spend_limit_usd)
+        if db_user.gemini_spend_limit_usd is not None
+        else None
+    )
+    rem = None
+    if bool(db_user.gemini_spend_limit_enabled) and lim is not None:
+        rem = max(0.0, float(lim - cost))
     return AdminUserDetailOut(
         id=int(db_user.id),
         username=str(db_user.username),
@@ -187,6 +212,7 @@ def _admin_user_detail_out(db: Session, admin: User, db_user: User) -> AdminUser
             else None
         ),
         used_stored_large_rows=int(used_map.get(int(db_user.id), 0)),
+        used_stored_large_bytes=int(used_bytes_map.get(int(db_user.id), 0)),
         subscription_cycle_started_at=started,
         subscription_cycle_ends_at=end_at,
         cycle_days_remaining=int(days_rem),
@@ -206,6 +232,11 @@ def _admin_user_detail_out(db: Session, admin: User, db_user: User) -> AdminUser
         gemini_live_tokens=l_tok,
         gemini_live_events=l_ev,
         gemini_live_models=l_models,
+        gemini_rest_model_id=(db_user.gemini_rest_model_id or None),
+        gemini_live_model_id=(db_user.gemini_live_model_id or None),
+        gemini_spend_limit_enabled=bool(db_user.gemini_spend_limit_enabled),
+        gemini_spend_limit_usd=lim,
+        gemini_spend_remaining_usd=rem,
     )
 
 
@@ -217,6 +248,21 @@ def _user_used_rows_map(db: Session, admin: User, user_ids: list[int]) -> dict[i
     for uid in user_ids:
         try:
             out[int(uid)] = count_rows_for_user_ids_sync(
+                dsn, int(admin.id), bool(admin.is_admin), [int(uid)]
+            )
+        except Exception:
+            out[int(uid)] = 0
+    return out
+
+
+def _user_used_bytes_map(db: Session, admin: User, user_ids: list[int]) -> dict[int, int]:
+    dsn = _check_pg_dsn()
+    if not dsn or not user_ids:
+        return {int(uid): 0 for uid in user_ids}
+    out: dict[int, int] = {}
+    for uid in user_ids:
+        try:
+            out[int(uid)] = count_storage_bytes_for_user_ids_sync(
                 dsn, int(admin.id), bool(admin.is_admin), [int(uid)]
             )
         except Exception:
@@ -320,12 +366,34 @@ async def list_users(
 ):
     rows = db.query(User).options(joinedload(User.group)).order_by(User.id.asc()).all()
     used_map = _user_used_rows_map(db, admin, [int(u.id) for u in rows])
+    used_bytes_map = _user_used_bytes_map(db, admin, [int(u.id) for u in rows])
     out: list[UserOut] = []
     for u in rows:
         item = _user_out(u)
         item.used_stored_large_rows = int(used_map.get(int(u.id), 0))
+        item.used_stored_large_bytes = int(used_bytes_map.get(int(u.id), 0))
         out.append(item)
     return out
+
+
+@router.get("/storage-summary")
+async def admin_storage_summary(
+    admin: User = Depends(require_admin),
+):
+    dsn = _check_pg_dsn()
+    if not dsn:
+        return {"server_rows": 0, "server_used_bytes": 0, "server_used_mb": 0.0}
+    try:
+        server_rows = count_rows_server_sync(dsn, int(admin.id), bool(admin.is_admin))
+        # For server total bytes we intentionally read all rows (admin context).
+        server_used_bytes = count_storage_bytes_server_sync(dsn, int(admin.id), bool(admin.is_admin))
+        return {
+            "server_rows": int(server_rows),
+            "server_used_bytes": int(server_used_bytes),
+            "server_used_mb": round(float(server_used_bytes) / (1024 * 1024), 3),
+        }
+    except Exception:
+        return {"server_rows": 0, "server_used_bytes": 0, "server_used_mb": 0.0}
 
 
 @router.get("/users/{user_id}", response_model=AdminUserDetailOut)
@@ -557,6 +625,41 @@ async def update_user_rows_limit(
     if not target:
         raise HTTPException(status_code=404, detail="المستخدم غير موجود")
     target.max_stored_large_rows = int(payload.max_stored_large_rows)
+    db.add(target)
+    db.commit()
+    db.refresh(target)
+    return _user_out(target)
+
+
+@router.patch("/users/{user_id}/gemini-policy", response_model=UserOut)
+async def update_user_gemini_policy(
+    user_id: int,
+    payload: UserGeminiPolicyUpdate,
+    _admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    target = db.query(User).options(joinedload(User.group)).filter(User.id == user_id).first()
+    if not target:
+        raise HTTPException(status_code=404, detail="المستخدم غير موجود")
+    rest_mid = (payload.gemini_rest_model_id or "").strip()
+    live_mid = (payload.gemini_live_model_id or "").strip()
+    if rest_mid and not is_gemini_model_allowed_sync("rest", rest_mid):
+        raise HTTPException(status_code=400, detail="موديل REST غير مسموح أو غير مفعّل.")
+    if live_mid and not is_gemini_model_allowed_sync("live", live_mid):
+        raise HTTPException(status_code=400, detail="موديل Live غير مسموح أو غير مفعّل.")
+    target.gemini_rest_model_id = rest_mid or None
+    target.gemini_live_model_id = live_mid or None
+    target.gemini_spend_limit_enabled = bool(payload.gemini_spend_limit_enabled)
+    if target.gemini_spend_limit_enabled:
+        if payload.gemini_spend_limit_usd is None:
+            raise HTTPException(status_code=400, detail="حدد قيمة حد الدولار عند التفعيل.")
+        target.gemini_spend_limit_usd = float(payload.gemini_spend_limit_usd)
+    else:
+        target.gemini_spend_limit_usd = (
+            float(payload.gemini_spend_limit_usd)
+            if payload.gemini_spend_limit_usd is not None
+            else target.gemini_spend_limit_usd
+        )
     db.add(target)
     db.commit()
     db.refresh(target)

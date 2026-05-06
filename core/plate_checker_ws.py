@@ -15,6 +15,8 @@ from fastapi import WebSocket
 from starlette.websockets import WebSocketDisconnect
 
 from config import settings
+from db import SessionLocal
+from models import User
 from core.excel_loader import (
     lookup_plate,
     merge_workbook_plate_column,
@@ -44,6 +46,11 @@ from services.provider_key_pool import (
     promote_parked_keys,
 )
 from services.provider_keys import classify_gemini_error
+from services.user_gemini_policy import (
+    GeminiPolicyError,
+    ensure_user_can_start_request,
+    resolve_model_for_user,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -798,13 +805,18 @@ async def handle_plate_checker_client(
         session.check_temp_session_token = temp_session_token if session.check_temp_enabled else ""
         session.check_temp_dsn = dsn_pg if session.check_temp_enabled else ""
         touch_session(session_key)
-        live_model = (init.get("live_model") or "").strip()
-        if not live_model:
-            await _send_error(
-                websocket,
-                "اختر موديل Live من القائمة أعلى الصفحة (مُدار من الخادم).",
-                "general",
-            )
+        live_model_req = (init.get("live_model") or "").strip()
+        try:
+            with SessionLocal() as db:
+                db_user = db.get(User, int(user_id))
+                if db_user is None:
+                    raise GeminiPolicyError("المستخدم غير موجود.")
+                ensure_user_can_start_request(db, db_user)
+                # Non-admin users cannot override admin-assigned model from client payload.
+                request_model = live_model_req if is_admin else ""
+                live_model = resolve_model_for_user(db, db_user, "live", request_model)
+        except GeminiPolicyError as e:
+            await _send_error(websocket, str(e), "general")
             session.connected = False
             _live_cleanup_tasks[session_key] = asyncio.create_task(
                 _schedule_idle_cleanup(session_key)

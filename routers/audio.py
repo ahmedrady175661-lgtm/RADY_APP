@@ -7,6 +7,7 @@ import re
 from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
 
+from db import get_db
 from dependencies.auth import get_current_user
 from models.user import User
 from services.gemini import process_audio
@@ -21,7 +22,13 @@ from services.job_store import (
     schedule_job_cleanup,
 )
 from services.provider_keys import async_gemini_try_all, has_any_gemini_keys
+from services.user_gemini_policy import (
+    GeminiPolicyError,
+    ensure_user_can_start_request,
+    resolve_model_for_user,
+)
 from services.upload_security import MAX_AUDIO_BYTES, save_upload_to_temp_with_limit
+from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 _JOB_ID_RE = re.compile(
@@ -163,17 +170,21 @@ async def _audio_job_task(
 async def process(
     background_tasks: BackgroundTasks,
     user: User = Depends(get_current_user),
-    model_name: str = Form(...),
+    db: Session = Depends(get_db),
+    model_name: str = Form(""),
     recorder_name: str = Form(""),
     sheet_name: str = Form("بيانات المركبات"),
     gps_data: str = Form("[]"),
     audio: UploadFile = File(...),
 ):
     model_name = model_name.strip()
-    if not model_name:
-        raise HTTPException(status_code=400, detail="اختر موديل التسجيل (REST).")
+    try:
+        ensure_user_can_start_request(db, user)
+        effective_model = resolve_model_for_user(db, user, "rest", model_name)
+    except GeminiPolicyError as e:
+        raise HTTPException(status_code=403, detail=str(e))
 
-    if not await asyncio.to_thread(is_gemini_model_allowed_sync, "rest", model_name):
+    if not await asyncio.to_thread(is_gemini_model_allowed_sync, "rest", effective_model):
         raise HTTPException(
             status_code=400,
             detail="موديل REST غير مسموح أو غير مفعّل — اختر من القائمة.",
@@ -211,7 +222,7 @@ async def process(
             int(user.id),
             file_path,
             file_name,
-            model_name,
+            effective_model,
             recorder_name.strip(),
             sheet_name.strip(),
             gps_points,

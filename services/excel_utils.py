@@ -1,5 +1,6 @@
 import asyncio
 import io
+import logging
 
 import openpyxl
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
@@ -7,6 +8,7 @@ from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from .plate_utils import auto_detect_plate_col
 
 # Project uses openpyxl (not pandas); heavy workbook I/O runs in a thread pool.
+logger = logging.getLogger(__name__)
 
 
 def load_workbook_maybe_encrypted(file_bytes: bytes, password: str = "") -> openpyxl.Workbook:
@@ -23,11 +25,13 @@ def load_workbook_maybe_encrypted(file_bytes: bytes, password: str = "") -> open
             dec.seek(0)
             return openpyxl.load_workbook(dec, read_only=True, data_only=True)
         except Exception as e:
-            raise ValueError(f"فشل فك تشفير الملف — تحقق من كلمة المرور: {e}")
+            logger.exception("Workbook decryption failed")
+            raise ValueError("فشل فك تشفير الملف — تحقق من كلمة المرور.") from e
     try:
         return openpyxl.load_workbook(io.BytesIO(file_bytes), read_only=True, data_only=True)
     except Exception as e:
-        raise ValueError(f"تعذّر فتح الملف: {e}")
+        logger.exception("Workbook open from bytes failed")
+        raise ValueError("تعذّر فتح الملف.") from e
 
 
 def load_workbook_maybe_encrypted_from_path(
@@ -43,7 +47,8 @@ def load_workbook_maybe_encrypted_from_path(
     try:
         return openpyxl.load_workbook(file_path, read_only=True, data_only=True)
     except Exception as e:
-        raise ValueError(f"تعذّر فتح الملف: {e}")
+        logger.exception("Workbook open from path failed")
+        raise ValueError("تعذّر فتح الملف.") from e
 
 
 def find_best_sheet(wb: openpyxl.Workbook) -> openpyxl.worksheet.worksheet.Worksheet:

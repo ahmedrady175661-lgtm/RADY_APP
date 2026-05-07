@@ -20,6 +20,7 @@ from services.auth_service import (
 )
 from services.gemini_usage import sum_gemini_cost_usd_for_user_cycle_channel
 from services.check_postgres import (
+    get_database_physical_size_bytes_sync,
     count_rows_for_user_ids_sync,
     count_storage_bytes_for_user_ids_sync,
 )
@@ -49,6 +50,7 @@ async def me(
     l_cost = 0.0
     used_rows = 0
     used_bytes = 0
+    server_phys_bytes = 0
     if not u.is_admin and u.subscription_cycle_started_at is not None:
         started = u.subscription_cycle_started_at
         started_at = started
@@ -66,9 +68,13 @@ async def me(
             used_bytes = count_storage_bytes_for_user_ids_sync(
                 dsn, int(u.id), bool(u.is_admin), [int(u.id)]
             )
+            server_phys_bytes = get_database_physical_size_bytes_sync(
+                dsn, int(u.id), bool(u.is_admin)
+            )
         except Exception:
             used_rows = 0
             used_bytes = 0
+            server_phys_bytes = 0
     return MeOut(
         username=u.username,
         is_admin=u.is_admin,
@@ -83,6 +89,8 @@ async def me(
         gemini_total_cost_usd=float(r_cost + l_cost),
         used_stored_large_rows=int(used_rows),
         used_stored_large_bytes=int(used_bytes),
+        postgres_server_physical_bytes=int(server_phys_bytes),
+        postgres_server_physical_mb=round(float(server_phys_bytes) / (1024 * 1024), 3),
     )
 
 

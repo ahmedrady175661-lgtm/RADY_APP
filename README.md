@@ -141,3 +141,105 @@ uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}
 - Old users from legacy SQLite are not copied automatically; migrate them manually if you need to preserve existing accounts.
 - Keep `JWT_SECRET_KEY` private and rotate periodically.
 - Use HTTPS and secure API gateway/reverse proxy.
+
+## Production Deploy (Hetzner CCX23 + Docker + Nginx)
+
+This repository now includes:
+
+- `Dockerfile`
+- `docker-compose.prod.yml`
+- `deploy/nginx/apprady.conf`
+- `.env` (local non-committed template)
+- `.env.example` (shareable template)
+
+### 1) Prepare VPS (Ubuntu)
+
+Install required packages:
+
+```bash
+sudo apt update
+sudo apt install -y docker.io docker-compose-plugin nginx certbot python3-certbot-nginx ufw fail2ban
+```
+
+Enable Docker:
+
+```bash
+sudo systemctl enable --now docker
+```
+
+Firewall baseline:
+
+```bash
+sudo ufw default deny incoming
+sudo ufw default allow outgoing
+sudo ufw allow 22/tcp
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+sudo ufw enable
+```
+
+### 2) Configure environment
+
+Create `.env` from template and set secure values:
+
+```bash
+cp .env.example .env
+```
+
+Required before first run:
+
+- `JWT_SECRET_KEY` (generate with `openssl rand -hex 64`)
+- `ADMIN_USERNAME` (non-default)
+- `ADMIN_PASSWORD` (strong)
+- `ALLOWED_ORIGINS` (your real HTTPS domain)
+- `POSTGRES_PASSWORD` and `REDIS_PASSWORD`
+- `DATABASE_URL` and `REDIS_URL` should match Docker service names (`db`, `redis`)
+
+### 3) Build and run stack
+
+```bash
+docker compose -f docker-compose.prod.yml up -d --build
+docker compose -f docker-compose.prod.yml ps
+docker compose -f docker-compose.prod.yml logs -f app
+```
+
+### 4) Configure Nginx
+
+Copy config and replace domain:
+
+```bash
+sudo cp deploy/nginx/apprady.conf /etc/nginx/sites-available/apprady.conf
+sudo nano /etc/nginx/sites-available/apprady.conf
+```
+
+In that file, replace all `yourdomain.com` with your real domain.
+
+Enable site:
+
+```bash
+sudo ln -s /etc/nginx/sites-available/apprady.conf /etc/nginx/sites-enabled/apprady.conf
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+### 5) Issue SSL certificate
+
+```bash
+sudo certbot --nginx -d yourdomain.com
+```
+
+After SSL success:
+
+```bash
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+### 6) Security checklist
+
+- Keep only ports `22`, `80`, `443` open.
+- Do **not** publish Postgres/Redis ports publicly.
+- Keep `.env` out of git (already ignored).
+- Rotate secrets periodically.
+- Keep system updates and Docker images patched.
+- Monitor app logs and Nginx logs for suspicious traffic.

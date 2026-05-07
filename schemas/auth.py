@@ -46,3 +46,5 @@ class MeOut(BaseModel):
     gemini_total_cost_usd: float = 0.0
     used_stored_large_rows: int = 0
     used_stored_large_bytes: int = 0
+    postgres_server_physical_bytes: int = 0
+    postgres_server_physical_mb: float = 0.0

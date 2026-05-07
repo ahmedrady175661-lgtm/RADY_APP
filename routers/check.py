@@ -206,8 +206,9 @@ async def check_headers(
                 wb.close()
             except Exception:
                 pass
-        except Exception as e:
-            result["large"] = {"error": str(e)}
+        except Exception:
+            logger.exception("check_headers large_file parse failed")
+            result["large"] = {"error": "تعذّر قراءة الملف الكبير."}
         finally:
             if large_tmp:
                 try:
@@ -246,8 +247,9 @@ async def check_headers(
                 wb.close()
             except Exception:
                 pass
-        except Exception as e:
-            result["small"] = {"error": str(e)}
+        except Exception:
+            logger.exception("check_headers small_file parse failed")
+            result["small"] = {"error": "تعذّر قراءة الملف الصغير."}
         finally:
             if small_tmp:
                 try:
@@ -371,8 +373,12 @@ async def check_temp_upload_large(
             large_col=large_col.strip(),
             large_sheet=large_sheet.strip(),
         )
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
+    except ValueError:
+        logger.exception("check_temp_upload_large validation failed")
+        raise HTTPException(
+            status_code=400,
+            detail="تعذّر معالجة الملف أو البيانات المرسلة.",
+        )
     except HTTPException:
         raise
     except Exception:
@@ -403,8 +409,12 @@ async def check_temp_query(
             session_token=token,
             plates_text=plates_text,
         )
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
+    except ValueError:
+        logger.exception("check_temp_query validation failed")
+        raise HTTPException(
+            status_code=400,
+            detail="تعذّر معالجة البيانات المرسلة.",
+        )
     except Exception:
         logger.exception("query_temp_plates_sync failed")
         raise HTTPException(status_code=500, detail="Failed to check plates.")
@@ -532,8 +542,12 @@ async def check_import_large(
         content = await asyncio.to_thread(Path(large_tmp).read_bytes)
     except HTTPException:
         raise
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
+    except Exception:
+        logger.exception("check_import_large read upload failed")
+        raise HTTPException(
+            status_code=400,
+            detail="تعذّر قراءة الملف المرفوع.",
+        )
     try:
         grp_limit = _group_rows_limit_for_user(db, current_user)
         usr_limit = _user_rows_limit_for_user(db, current_user)
@@ -550,8 +564,12 @@ async def check_import_large(
             grp_limit,
             usr_limit,
         )
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
+    except ValueError:
+        logger.exception("check_import_large validation/import failed")
+        raise HTTPException(
+            status_code=400,
+            detail="تعذّر استيراد الملف. تحقق من الملف والمدخلات ثم أعد المحاولة.",
+        )
     except Exception:
         logger.exception("import_large_workbook_sync failed")
         raise HTTPException(
@@ -792,29 +810,17 @@ async def process_check_queue_item(item: dict) -> None:
                 },
                 ttl_seconds=TTL_TERMINAL_SEC,
             )
-    except ValueError as e:
-        msg = str(e)
-        if "فشل فك تشفير" in msg or "فشل فك" in msg:
-            logger.exception("Failed to open encrypted large workbook")
-            await job_save(
-                job_id,
-                {
-                    "status": "error",
-                    "data": None,
-                    "detail": "An internal error occurred. Please try again.",
-                },
-                ttl_seconds=TTL_TERMINAL_SEC,
-            )
-        else:
-            await job_save(
-                job_id,
-                {
-                    "status": "error",
-                    "data": None,
-                    "detail": msg,
-                },
-                ttl_seconds=TTL_TERMINAL_SEC,
-            )
+    except ValueError:
+        logger.exception("Check plates validation failed")
+        await job_save(
+            job_id,
+            {
+                "status": "error",
+                "data": None,
+                "detail": "تعذّر معالجة الملفات المرفوعة. تحقق من المدخلات ثم أعد المحاولة.",
+            },
+            ttl_seconds=TTL_TERMINAL_SEC,
+        )
     except Exception:
         logger.exception("Check plates job failed")
         await job_save(

@@ -570,8 +570,12 @@ async def parse_export_append(file: UploadFile = File(...)):
         )
         rows_out, total = await asyncio.to_thread(_parse_append_excel_sync, tmp_path)
         return JSONResponse({"rows": rows_out, "total": total})
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    except ValueError:
+        logger.exception("parse_export_append validation failed")
+        raise HTTPException(
+            status_code=400,
+            detail="تعذّر قراءة ملف الإضافة. تحقق من تنسيق الملف ثم أعد المحاولة.",
+        )
     except HTTPException:
         raise
     except Exception:
@@ -604,8 +608,12 @@ async def parse_check_session_append(file: UploadFile = File(...)):
         )
         rows_out, total = await asyncio.to_thread(_parse_check_session_append_sync, tmp_path)
         return JSONResponse({"rows": rows_out, "total": total})
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    except ValueError:
+        logger.exception("parse_check_session_append validation failed")
+        raise HTTPException(
+            status_code=400,
+            detail="تعذّر قراءة ملف الجلسة. تحقق من تنسيق الملف ثم أعد المحاولة.",
+        )
     except HTTPException:
         raise
     except Exception:

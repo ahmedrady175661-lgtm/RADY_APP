@@ -618,8 +618,13 @@ async def handle_client_messages(
                                 },
                             },
                         )
-                    except Exception as e:
-                        await _send_error(websocket, f"خطأ في تحميل الملف: {e}", "excel_error")
+                    except Exception:
+                        logger.exception("Live WS excel upload failed")
+                        await _send_error(
+                            websocket,
+                            "حدث خطأ أثناء تحميل الملف. حاول مرة أخرى.",
+                            "excel_error",
+                        )
                     finally:
                         if tmp_path:
                             try:

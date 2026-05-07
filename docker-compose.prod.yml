@@ -1,0 +1,64 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: apprady_app
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      - db
+      - redis
+    networks:
+      - backend
+    expose:
+      - "8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+  db:
+    image: postgres:16
+    container_name: apprady_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-apprady}
+      POSTGRES_USER: ${POSTGRES_USER:-apprady_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    networks:
+      - backend
+    expose:
+      - "5432"
+
+  redis:
+    image: redis:7-alpine
+    container_name: apprady_redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD}"]
+    volumes:
+      - redis_data:/data
+    networks:
+      - backend
+    expose:
+      - "6379"
+
+networks:
+  backend:
+    driver: bridge
+
+volumes:
+  pg_data:
+  redis_data:

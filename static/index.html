@@ -1227,6 +1227,8 @@ async function openSettings(){
     const usedMB=(Number(j.used_stored_large_bytes||0)/(1024*1024));
     rows+='<tr><th style="'+thSt+'">صفوف Postgres المستخدمة</th><td style="'+tdSt+'">'+String(usedRows)+'</td></tr>';
     rows+='<tr><th style="'+thSt+'">مساحة Postgres المستخدمة</th><td style="'+tdSt+'"><strong>'+usedMB.toFixed(2)+' MB</strong></td></tr>';
+    const dbPhysMB=Number(j.postgres_server_physical_mb||0);
+    rows+='<tr><th style="'+thSt+'">الحجم الفيزيائي لقاعدة Postgres (السيرفر)</th><td style="'+tdSt+'"><strong>'+dbPhysMB.toFixed(2)+' MB</strong></td></tr>';
     let html='<table dir="rtl" style="'+tblSt+'">'+rows+'</table>';
     if(daysNum===0){
       html+='<p style="margin:.55rem 0 0;font-size:.72rem;color:var(--red)">انتهت مدة الدورة — تواصل مع المسؤول لتجديد الاشتراك.</p>';

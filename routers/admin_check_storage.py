@@ -105,9 +105,14 @@ async def check_storage_export_csv(import_id: int, _admin: User = Depends(requir
             admin_write_import_csv_tempfile_sync, url, _admin.id, True, import_id
         )
     except ValueError as e:
-        if "not found" in str(e).lower() or "import not" in str(e).lower():
-            raise HTTPException(status_code=404, detail=str(e)) from e
-        raise HTTPException(status_code=400, detail=str(e)) from e
+        msg = str(e).lower()
+        if "not found" in msg or "import not" in msg:
+            raise HTTPException(status_code=404, detail="الاستيراد المطلوب غير موجود.") from e
+        logger.exception("admin export csv validation failed")
+        raise HTTPException(
+            status_code=400,
+            detail="تعذّر تجهيز ملف التصدير.",
+        ) from e
     except Exception:
         logger.exception("admin_write_import_csv_tempfile_sync failed")
         raise HTTPException(

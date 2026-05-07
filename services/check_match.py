@@ -187,7 +187,8 @@ def run_check_plates_sync(
         try:
             small_wb = openpyxl.load_workbook(io.BytesIO(sc_bytes), read_only=True, data_only=True)
         except Exception as e:
-            raise ValueError(f"تعذّر فتح الملف الصغير: {e}") from e
+            logger.exception("Failed to open small workbook for check match")
+            raise ValueError("تعذّر فتح الملف الصغير.") from e
 
         large_ws = (
             large_wb[large_sheet]

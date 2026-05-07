@@ -4,9 +4,9 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 import aiofiles
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from slowapi.errors import RateLimitExceeded
 from sqlalchemy.exc import IntegrityError, OperationalError
@@ -153,8 +153,9 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title=settings.app_title,
     version=settings.app_version,
-    docs_url="/docs",
-    redoc_url="/redoc",
+    openapi_url=None,
+    docs_url=None,
+    redoc_url=None,
     lifespan=lifespan,
 )
 
@@ -171,6 +172,18 @@ app.add_middleware(
 app.state.limiter = limiter
 # SECURITY FIX: return controlled JSON for rate-limit errors.
 app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
+
+
+@app.middleware("http")
+async def global_exception_middleware(request: Request, call_next):
+    try:
+        return await call_next(request)
+    except Exception:
+        logger.exception("Unhandled exception on %s %s", request.method, request.url.path)
+        return JSONResponse(
+            status_code=500,
+            content={"detail": "حدث خطأ داخلي غير متوقع. حاول مرة أخرى لاحقاً."},
+        )
 
 # ── Routers ───────────────────────────────────────────────────────────────────
 app.include_router(audio_router)
@@ -241,7 +254,7 @@ if __name__ == "__main__":
     import uvicorn
 
     print(f"🚗  التسجيل — Server running → http://localhost:{settings.port}")
-    print(f"     Docs: http://localhost:{settings.port}/docs")
+    print("     OpenAPI docs are disabled.")
     uvicorn.run(
         "main:app",
         host="0.0.0.0",

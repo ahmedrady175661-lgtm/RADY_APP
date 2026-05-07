@@ -181,8 +181,12 @@ async def process(
     try:
         ensure_user_can_start_request(db, user)
         effective_model = resolve_model_for_user(db, user, "rest", model_name)
-    except GeminiPolicyError as e:
-        raise HTTPException(status_code=403, detail=str(e))
+    except GeminiPolicyError:
+        logger.exception("Gemini policy denied audio request")
+        raise HTTPException(
+            status_code=403,
+            detail="غير مسموح بتنفيذ الطلب وفق سياسة الحساب الحالية.",
+        )
 
     if not await asyncio.to_thread(is_gemini_model_allowed_sync, "rest", effective_model):
         raise HTTPException(

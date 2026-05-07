@@ -582,6 +582,16 @@ def count_rows_server_sync(dsn: str, user_id: int, is_admin: bool) -> int:
             return int(row[0] if row else 0)
 
 
+def get_database_physical_size_bytes_sync(dsn: str, user_id: int, is_admin: bool) -> int:
+    """Physical PostgreSQL database size in bytes for current DB (table+index+toast)."""
+    ensure_check_pg_schema(dsn)
+    with check_pg_tx(dsn, user_id, is_admin) as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT COALESCE(pg_database_size(current_database()), 0)::bigint")
+            row = cur.fetchone()
+            return int(row[0] if row else 0)
+
+
 def list_imports_sync(
     dsn: str,
     user_id: int,

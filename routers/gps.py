@@ -207,8 +207,12 @@ async def check_gps_data(
 
         try:
             small_wb = await load_workbook_from_path_async(small_path)
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=f"تعذّر فتح الملف الصغير: {e}")
+        except Exception:
+            logger.exception("Failed to open small workbook in GPS check")
+            raise HTTPException(
+                status_code=400,
+                detail="تعذّر فتح الملف الصغير. تحقق من الملف ثم أعد المحاولة.",
+            )
 
         large_ws = (
             large_wb[large_sheet]

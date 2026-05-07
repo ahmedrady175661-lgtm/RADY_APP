@@ -145,7 +145,11 @@ async def admin_post_key(
             ) from e
         if msg == "invalid_kind":
             raise HTTPException(status_code=400, detail="kind must be gemini|ors|gmaps") from e
-        raise HTTPException(status_code=400, detail=msg) from e
+        logger.exception("admin_post_key failed")
+        raise HTTPException(
+            status_code=400,
+            detail="تعذّر إضافة المفتاح. تحقق من البيانات ثم أعد المحاولة.",
+        ) from e
 
 
 @router.delete("/key-pools/{kind}/keys/{key_id}")
@@ -159,7 +163,11 @@ async def admin_remove_key(
     except ValueError as e:
         if str(e) == "redis_unconfigured":
             raise HTTPException(status_code=503, detail="Redis غير مضبوط.") from e
-        raise HTTPException(status_code=400, detail=str(e)) from e
+        logger.exception("admin_remove_key failed")
+        raise HTTPException(
+            status_code=400,
+            detail="تعذّر حذف المفتاح المطلوب.",
+        ) from e
     return {"deleted": True}
 
 
